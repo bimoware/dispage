@@ -1,6 +1,6 @@
 <div align="center"><h1>Dispage</h1></div>
 
-> ## ⚠ Warning!! ⚠ 
+> ## ⚠ Warning! ⚠ 
 > This is a really new package so even if it's been tested a lot and the sample code provided here works perfecty, there could still be some bugs or issues you can report <a href="https://github.com/voxlinou1/dispage/issues">here</a> !
 
 ## About
