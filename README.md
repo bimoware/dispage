@@ -1,6 +1,7 @@
 <div align="center">  <h1>Dispage</h1> </div>
 <br>
-
+# Important
+This is a really new package so even if it's been tested a lot and the sample code provided here works perfecty, there could still be some bugs or issues you can report <a href="https://github.com/voxlinou1/dispage/issues">here</a> !
 ## About
 
 dispage is a powerful [Node.js](https://nodejs.org) module that allows you to easily create button to switch over embed pages on a discord message.
