@@ -1,5 +1,7 @@
-<div align="center">  <h1>Dispage</h1> </div>
-<br>
+<div align="center"><h1>Dispage</h1></div>
+
+> ## ⚠ Warning ⚠
+> This is a really new package so even if it's been tested a lot and the sample code provided here works perfecty, there could still be some bugs or issues you can report <a href="https://github.com/voxlinou1/dispage/issues">here</a> !
 
 ## About
 
@@ -10,6 +12,10 @@ dispage is a powerful [Node.js](https://nodejs.org) module that allows you to ea
 ## Dependencies
 
 **Needs discord.js v13 or higher.**
+If discord.js isn't installed yet :
+```sh-session
+npm install discord.js
+```
 
 ## Installation
 ```sh-session
@@ -57,4 +63,4 @@ client.on('messageCreate', message =>{
   });
 ```
 ## Trouble
-Having a problem using <a href="https://npmjs.com/package/dispage">**dispage**</a> ? Don't hesitate to ask in our *[support server](https://discord.gg/aAXMHUvDTK)* !
+Having a problem using <a href="https://npmjs.com/package/dispage">**dispage**</a> ? Don't hesitate to send a message to *Vox#6198* !
