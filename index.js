@@ -357,12 +357,12 @@ module.exports.PageSystem = class PageSystem {
         if (!this.getRow()) return;
         this.collector = this.reply.createMessageComponentCollector({
             componentType: 'BUTTON',
-            time: this.duration
+            time: this.duration,
+            filter: this.filter
         });
 
         this.collector.on('collect', int => {
             if (!int.isButton()) return;
-            if (!this.filter(int)) return;
             int.deferUpdate();
             switch (int.customId) {
                 case 'next':
