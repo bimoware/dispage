@@ -19,7 +19,7 @@ module.exports.PageSystem = class PageSystem {
          */
         this.embeds = [];
         /**
-         * "interaction" "message" The type of reply (interaction/message)
+         * @type {"INTERACTION" | "MESSAGE"} the type of reply (interaction/message)
          */
         this.ctx = null;
         /**
@@ -55,34 +55,35 @@ module.exports.PageSystem = class PageSystem {
             next: "➡️"
         };
         /**
-         * The only component row containing the buttons
-         */
-        this._row = [
-            ['previous', this.emojis.previous, 'PRIMARY'],
-            ['stop', this.emojis.stop, 'DANGER'],
-            ['next', this.emojis.next, 'PRIMARY']
-        ].map(arr => {
-            return {
-                name: arr[0],
-                emoji: arr[1],
-                style: arr[2]
-            }
-        })
-        /**
          * @param {Number} i Current embed page
          * @param {Number} l Embed page length
          * @returns {string}
          */
-        this.footer = (i, l) => l - 1 ? `📜 Page ${i}/${l}` : '';
+        this.footer = (index, total) => total - 1 ? `📜 Page ${index}/${total}` : '';
         /**
          * Checks if interaction can interact.
          * @param {Discord.ButtonInteraction}
          * @returns {Boolean}
          */
         this.filter = i => this.id === i.user.id;
-        this.e = (msg) => { throw new Error(msg); };
+        this.e = msg => { throw new Error(msg); };
     }
-
+    get _row(){
+        return [
+            ['previous', 'PRIMARY'],
+            ['stop', 'DANGER'],
+            ['next', 'PRIMARY']
+        ].map(arr => {
+            return {
+                name: arr[0],
+                emoji: this.emojis[arr[0]],
+                style: arr[1]
+            }
+        });
+    }
+    get type(){
+        return this.ctx.toLowerCase();
+    }
     /**
      * @description How much time untill the collector has finished.
      * @returns {Number} Time in milliseconds
@@ -149,13 +150,23 @@ module.exports.PageSystem = class PageSystem {
      * @param {Discord.MessageEmbed[]} embeds An array of the embeds to use.
      * @returns {this}
      * @example
+     * // All in one argument as an array:
      * .setEmbeds([
      *     new Discord.MessageEmbed().setDescription('First embed')
      *     new Discord.MessageEmbed().setDescription('Middle embed')
      *     new Discord.MessageEmbed().setDescription('Last embed')
      * ])
+     * @example
+     * // Or with multiple arguments:
+     * .setEmbeds(
+     *     new Discord.MessageEmbed().setDescription('First embed')
+     *     new Discord.MessageEmbed().setDescription('Middle embed')
+     *     new Discord.MessageEmbed().setDescription('Last embed')
+     * )
      */
-    setEmbeds(embeds) {
+    setEmbeds(...embeds) {
+        embeds = embeds instanceof Discord.MessageEmbed ? [embeds] : embeds;
+        embeds = Array.isArray(embeds[0]) ? embeds[0] : embeds
         if (!embeds) return this.e('No embed given')
         if (embeds instanceof Discord.MessageEmbed) embeds = [embeds];
         if (!Array.isArray(embeds)) return this.e(`"${embeds}" is not an array but a ${typeof(embeds)}.`)
@@ -163,7 +174,7 @@ module.exports.PageSystem = class PageSystem {
         const notAnEmbed = embeds.find(e => typeof(e) !== "object");
         if (notAnEmbed) return this.e(`Array contains a none-embed at index ${embeds.indexOf(notAnEmbed)} (${notAnEmbed})`)
         this.embeds = embeds;
-        this.fixEmbeds();
+        this._fixEmbeds();
         return this;
     }
 
@@ -182,8 +193,9 @@ module.exports.PageSystem = class PageSystem {
      * @returns {this}
      */
     addEmbeds(...embeds) {
+        embeds = embeds instanceof Discord.MessageEmbed ? [embeds] : embeds;
+        embeds = Array.isArray(embeds[0]) ? embeds[0] : embeds
         if (!embeds) return this.e('No embeds given')
-        embeds = Array.isArray(embeds[0]) ? embeds[0] : embeds;
         embeds.forEach(embed => this.addEmbed(embed));
         return this;
     }
@@ -198,7 +210,7 @@ module.exports.PageSystem = class PageSystem {
      * .setDuration(1e5) // 100000ms (100s)
      * .setDuration(100000) // 100000ms (100s)
     */
-    setTime(duration) {
+    setDuration(duration) {
         if (!duration) return this.e('No duration given.')
         if (typeof (duration) !== "number") return this.e(`${duration} is not a number.`)
         if (isNaN(duration)) return this.e(`Duration is NaN.`);
@@ -242,7 +254,7 @@ module.exports.PageSystem = class PageSystem {
     /**
      * @description Replaces every embed's footer by the wanted footer.
      */
-    fixEmbeds() {
+    _fixEmbeds() {
         this.embeds = this.embeds.map((e, i) => e.setFooter({
             text: this.footer(this.index + 1 + i, this.embeds.length)
         }))
@@ -256,8 +268,8 @@ module.exports.PageSystem = class PageSystem {
      */
     edit(opts) {
         if (this.ended || this.deleted) return;
-        if (this.ctx == "interaction") return this.interaction.editReply(opts).catch(console.error)
-        else if (this.ctx == "message") return this.reply.edit(opts).catch(console.error)
+        if (this.ctx == "INTERACTION") return this.interaction.editReply(opts).catch(console.error)
+        else if (this.ctx == "MESSAGE") return this.reply.edit(opts).catch(console.error)
         else return this.e('No message to edit.')
     }
     /**
@@ -276,8 +288,8 @@ module.exports.PageSystem = class PageSystem {
     end() {
         if (!this.ctx) return this.e("Nothing to end.")
         if (this.ended) return this.e('EBPS already ended.');
-        this.disableButtons()
-        return this.ended = true;
+        this.ended = true;
+        return this.disableButtons()
     }
     /**
      * @description Deletes the remply to the embed.
@@ -287,7 +299,7 @@ module.exports.PageSystem = class PageSystem {
         if (this.deleted) return;
         this.deleted = true
         this.ended = true;
-        if (this.ctx == "message") return this.reply.delete();
+        if (this.ctx == "MESSAGE") return this.reply.delete();
         else return this.interaction.deleteReply();
     }
     /**
@@ -327,11 +339,11 @@ module.exports.PageSystem = class PageSystem {
         if (!ctx) return this.e('No message/interaction given.');
         if (ctx instanceof Discord.Message || ctx.author) {
             this.message = ctx;
-            this.ctx = "message";
+            this.ctx = "MESSAGE";
             this.setUserID(ctx.author.id)
         } else if (ctx instanceof Discord.CommandInteraction || ctx.user) {
             this.interaction = ctx;
-            this.ctx = "interaction";
+            this.ctx = "INTERACTION";
             this.setUserID(ctx.user.id)
         } else if (ctx instanceof Discord.Interaction){
             return this.e(`${ctx} is an interaction but not a command (it's type is "${ctx.type}").`)
@@ -339,7 +351,7 @@ module.exports.PageSystem = class PageSystem {
 
         let opts = this.getOpts();
 
-        this.reply = await this[this.ctx].reply({ fetchReply: true, ...opts });
+        this.reply = await this[this.type].reply({ fetchReply: true, ...opts });
 
         if (!this.reply) return this.e('Could not fetch reply of the message/interaction');
         if (!this.getRow()) return;

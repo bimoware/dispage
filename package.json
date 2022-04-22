@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "The easiest and most customizable way to add discord.js an embed button page system to your bot.",
   "main": "index.js",
+  "types": "index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
