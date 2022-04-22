@@ -32,13 +32,13 @@ declare class PageSystem {
     public footer: Function;
     public filter: Function;
     private e: Function;
-    private _row: {
+    private get _row(): {
         name: string,
         emoji: string,
         style: MessageButtonStyle
     }[]
-    public type: string;
-    public endUntill: number | null;
+    public get type(): string;
+    public get endUntill(): number | null;
     public getRow(disabled?: boolean): MessageActionRow;
     public setUserID(id: UserResolvable): this;
     public setFooter(footer: Function): this;
