@@ -23,7 +23,7 @@ export class PageSystem {
     public ended: boolean;
     public started: boolean;
     public deleted: boolean;
-    public duration: number | null;
+    public duration: number;
     public emojis: {
         previous: string,
         stop: string,
@@ -142,17 +142,17 @@ export class PageSystem {
 
     next() {
         if (this.canEdit()) return this.setIndex(this.index + 1)
-        else return false;
+        else return Promise.resolve();
     }
 
     previous() {
         if (this.canEdit()) return this.setIndex(this.index - 1)
-        else return false;
+        else return Promise.resolve();
     }
 
     setIndex(index: number) {
         this.index = index;
-        if (this.canEdit()) return this.update()
+        if (this.canEdit()) this.update()
         return this;
     }
 
