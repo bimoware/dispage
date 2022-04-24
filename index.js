@@ -13,30 +13,24 @@ module.exports = class PageSystem {
         this.started = false;
         this.deleted = false;
         this.duration = 1000 * 60;
-        this.emojis = {
-            previous: "⬅️",
-            stop: "⏹️",
-            next: "➡️"
-        };
+        this.mainStyle = "PRIMARY";
+        this.buttons = [
+            ['previous', "⬅️"],
+            ['stop', "⏹️", "DANGER"],
+            ['next', "➡️"]
+        ].map(arr => {
+            return {
+                customId: arr[0],
+                emoji: arr[1],
+                style: arr[2] || this.mainStyle,
+                label: arr[3]
+            }
+        });
         this.footer = (index, total) => total - 1 ? `📜 Page ${index}/${total}` : '';
         this.filter = (i) => this.id === i.user.id;
-        console.log(this);
     }
     get ctx() {
         return this.message ? "MESSAGE" : this.interaction ? "INTERACTION" : null;
-    }
-    get _row() {
-        return [
-            ['previous', 'PRIMARY'],
-            ['stop', 'DANGER'],
-            ['next', 'PRIMARY']
-        ].map(arr => {
-            return {
-                name: arr[0],
-                emoji: this.emojis[arr[0]],
-                style: arr[1]
-            }
-        });
     }
     get type() {
         return this.ctx.toLowerCase();
@@ -46,6 +40,40 @@ module.exports = class PageSystem {
         return this.collector ? (Date.now() - this.collector.options.time) : null;
     }
 
+    /** 
+     * @returns {Discord.MessageEmbed}
+     */
+    get currentEmbed() {
+        return this.embeds[this.index];
+    }
+    /**
+     * @param {object} o
+     * @returns {this}
+     */
+    addButton(o) {
+        this.buttons.push(o);
+        return this;
+    }
+    /**
+     * @param {string} customId
+     * @returns {this}
+     */
+    removeButton(customId) {
+        const i = this.buttons.findIndex(btn => btn.customId === customId);
+        if (i < 0) this.buttons.slice(i,i+1);
+        return this;
+    }
+    /**
+     * @param {string} customId
+     * @param {object} o
+     * @returns {this}
+     */
+    editButton(customId,o) {
+        const i = this.buttons.findIndex(btn => btn.customId === customId);
+        if (i < 0) this.addButton(o)
+        else this.buttons[i] = { ...this.buttons[i], ...o};
+        return this;
+    }
     /**
      * @param {boolean} disabled 
      * @returns {Discord.MessageActionRow | null}
@@ -56,19 +84,18 @@ module.exports = class PageSystem {
         let next = this.embeds[this.index + 1];
         function format(a) {
             let d = disabled
-                || (a.name == "previous" && !previous)
-                || (a.name == "next" && !next)
+                || (a.customId == "previous" && !previous)
+                || (a.customId == "next" && !next)
                 || false;
 
             let button = new Discord.MessageButton()
-                .setCustomId(a.name)
+                .setCustomId(a.customId)
                 .setEmoji(a.emoji)
                 .setStyle(a.style)
                 .setDisabled(d);
             return ar.addComponents(button);
         }
-        this._row.forEach(b => format(b));
-
+        this.buttons.forEach(format);
         return ar.components.length ? ar : null;
     }
 
@@ -84,9 +111,12 @@ module.exports = class PageSystem {
     /**
      * @param {Function} func 
      * @returns {this}
+     * @example
+     * .setFooter((index, total) => total - 1 ? `📜 Page ${index}/${total}` : '');
+     * // If it's the first page, will be empty. Othewise, ^^^^ will display this text
      */
     setFooter(func) {
-        this.footer = func || (() => '');
+        this.footer = func ?? (() => '');
         return this;
     }
 
@@ -105,7 +135,7 @@ module.exports = class PageSystem {
      * @returns {this}
      */
     addEmbed(embed) {
-        return this.addEmbeds([embed]);
+        return this.setEmbeds([...this.embeds, embed]);
     }
 
     /**
@@ -167,12 +197,17 @@ module.exports = class PageSystem {
         if (this.canEdit()) this.update()
         return this;
     }
-
+    fixEmbedFooters() {
+        return this.embeds.forEach(embed => {
+            embed.setFooter({ text: this.footer(this.index + 1, this.embeds.length) })
+        });
+    }
     /**
      * @param {Discord.MessageEditOptions} opts 
      */
     edit(opts) {
         if (this.deleted) return Promise.reject('No message to edit.')
+        this.fixEmbedFooters();
         return this.reply.edit(opts)
     }
 
@@ -191,13 +226,6 @@ module.exports = class PageSystem {
         this.ended = true;
         if (this.reply) return this.reply.delete();
         else return Promise.reject('No message to edit.');
-    }
-
-    /** 
-     * @returns {Discord.MessageEmbed}
-     */
-    get currentEmbed() {
-        return this.embeds[this.index];
     }
 
     update() {
@@ -229,14 +257,14 @@ module.exports = class PageSystem {
         if (this.ended) add('Page system has ended already.')
         if (this.deleted) add('Page system has previously been deleted.')
         if (!msg) add('No message/interaction given.');
-        if(msg.author){
+        if (msg.author) {
             this.message = msg;
             this.setUserID(msg.author.id)
-        } else if(msg.user) {
+        } else if (msg.user) {
             this.interaction = msg;
             this.setUserID(msg.user.id)
         } else add(`.start(<ctx>) -> ctx is neiher an interaction nor a message.`);
-        
+
         /*
         if (msg instanceof Discord.Message) {
             this.message = msg;
@@ -246,7 +274,7 @@ module.exports = class PageSystem {
             this.setUserID(msg.user.id)
             
         */
-       
+
         if (!this.embeds.length) add('Embed array is empty.')
         /*
         else this.embeds.forEach((embed, i) =>{
@@ -256,8 +284,7 @@ module.exports = class PageSystem {
 
         if (typeof (this.index) !== "number"
             || isNaN(this.index)
-            || this.index < 0
-            || this.index > 10) add(`Invalid index ${this.index}`);
+            || this.index < 0) add(`Invalid index ${this.index}`);
 
         if (!this.embeds[this.index]) add(`No embed at index ${this.index}`);
 
@@ -265,7 +292,7 @@ module.exports = class PageSystem {
             add(`Footer is not a function but a ${typeof (this.footer)}.`)
 
         if (typeof (this.filter) !== "function")
-            add(`Filter is not a function but a ${typeof (this.footer)}.`)
+            add(`Filter is not a function but a ${typeof (this.filter)}.`)
 
         if (typeof (this.id) !== "string") add(`ID "${this.id}" is not a string.`)
         else if (this.id.split(' ').some(c => !Number(c))) add(`ID "${this.id}" is not a valid user ID.`);
@@ -285,8 +312,10 @@ module.exports = class PageSystem {
         this.reply = await this[this.type].reply({
             fetchReply: true,
             ...this.getOpts()
+        }).then(res => {
+            this.started = true;
+            return res;
         })
-        this.started = true;
 
         if (!this.reply) throw new Error('Could not fetch reply of the message/interaction');
         if (!this.getRow()) return;
@@ -309,13 +338,13 @@ module.exports = class PageSystem {
                         await this.previous();
                         break;
                 }
-                if (!this.ended) await this.update();
+                if (!this.ended) this.update();
             }
-            int.deferUpdate()
+            await int.deferUpdate().catch(() => 0);
         });
 
         this.collector.on('end', () => { this.end() });
 
-        return this.reply;
+        return this;
     }
 }
