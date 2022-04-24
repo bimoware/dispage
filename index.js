@@ -1,16 +1,4 @@
-const {
-    Client,
-    CommandInteraction,
-    ButtonInteraction,
-    Interaction,
-    InteractionCollector,
-    Message,
-    MessageActionRow,
-    MessageButton,
-    MessageEmbed,
-    MessageOptions,
-    UserResolvable,
-} = require('discord.js');
+const Discord = require('discord.js');
 
 module.exports = class PageSystem {
     constructor(client) {
@@ -58,7 +46,7 @@ module.exports = class PageSystem {
     }
 
     getRow(disabled = false) {
-        let ar = new MessageActionRow()
+        let ar = new Discord.MessageActionRow()
         let previous = this.embeds[this.index - 1];
         let next = this.embeds[this.index + 1];
         function format(a) {
@@ -99,8 +87,9 @@ module.exports = class PageSystem {
         return this.addEmbeds([embed]);
     }
     fixEmbeds(embeds) {
-        embeds = embeds instanceof MessageEmbed ? [embeds] : embeds;
+        // embed
         embeds = Array.isArray(embeds[0]) ? embeds[0] : embeds
+        embeds = embeds instanceof Discord.MessageEmbed ? [embeds] : embeds;
         return embeds;
     }
 
@@ -137,8 +126,7 @@ module.exports = class PageSystem {
 
     edit(opts) {
         if (this.ended || this.deleted) return Promise.reject('No message to edit.')
-        if (this.ctx == "INTERACTION") return this.interaction.editReply(opts)
-        else if (this.ctx == "MESSAGE") return this.reply.edit(opts)
+        return this.reply.edit(opts)
     }
 
     disableButtons() {
@@ -154,8 +142,7 @@ module.exports = class PageSystem {
     delete() {
         this.deleted = true;
         this.ended = true;
-        if (this.ctx == "MESSAGE") return this.reply.delete();
-        else if (this.ctx == "INTERACTION") return this.interaction.deleteReply();
+        if(this.reply) return this.reply.delete();
         else return Promise.reject('No message to edit.');
     }
 
@@ -180,32 +167,31 @@ module.exports = class PageSystem {
         return this.ctx ? this.ctx === "INTERACTION" : null;
     }
     canEdit() {
-        return this.ctx && !this.ended && !this.deleted
+        return this.ctx && this.started && !this.ended && !this.deleted;
     }
     isValidCtx(ctx) {
-        return [CommandInteraction, Message].some(c => ctx instanceof c);
+        return ctx instanceof Discord.Message || ctx instanceof Discord.CommandInteraction;
     }
     checkForErrors(msg) {
         let errors = []
-        function add(error) { this.errors.push(error) };
-        if (!this.isValidCtx(msg)) add('Invalid context. Must be a message or interaction');
-        if (!this.ctx) add('No embed sent yet.')
+        function add(error) { errors.push(error) };
         if (this.ended) add('Page system has ended already.')
+        if (this.deleted) add('Page system has previously been deleted.')
         if (!msg) add('No message/interaction given.');
-        if (msg instanceof Message && msg.author) {
+        if (msg instanceof Discord.Message) {
             this.message = msg;
             this.setUserID(msg.author.id)
-        } else if (msg instanceof CommandInteraction && msg.user) {
+        } else if (msg instanceof Discord.CommandInteraction) {
             this.interaction = msg;
             this.setUserID(msg.user.id)
-        } else if (msg instanceof Interaction) {
+        } else if (msg instanceof Discord.Interaction) {
             add(`${msg} is an interaction but not a command (it's type is "${msg.type}").`)
         } else add(`${msg} is neiher an interaction or a message.`);
 
         if (!this.embeds.length) add('Embed array is empty.')
         else {
             this.embeds.forEach((embed, i) => {
-                if (!(embed instanceof MessageEmbed)) add(`Embed at position ${i} is not an embed.`);
+                if (!(embed instanceof Discord.MessageEmbed)) add(`Embed at position ${i} is not an embed.`);
             })
         }
         if (typeof (this.index) !== "number"
@@ -222,11 +208,13 @@ module.exports = class PageSystem {
             add(`Filter is not a function but a ${typeof (this.footer)}.`)
 
         if (typeof (this.id) !== "string") add(`ID "${this.id}" is not a string.`)
-        if (!(this.id.split(' ').every(c => Number(c)))) add(`ID "${this.id}" is not a valid user ID.`);
+        else if (this.id.split(' ').some(c => !Number(c))) add(`ID "${this.id}" is not a valid user ID.`);
+
         return errors;
     }
 
     async start(ctx) {
+        if(!this.id) this.id = ctx.author?.id || ctx.user?.id || this.id;
         let errors = this.checkForErrors(ctx)
         if (errors.length)
             throw new Error("Errors ecountered :\n" + errors.map((e, i) => `${i + 1} - ${e}`).join('\n'))

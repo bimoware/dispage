@@ -9,6 +9,7 @@ import {
     MessageOptions,
     UserResolvable
 } from "discord.js";
+
 export class PageSystem {
     client: Client | null;
     index: number;
