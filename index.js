@@ -12,7 +12,7 @@ const {
     UserResolvable,
 } = require('discord.js');
 
-export class PageSystem {
+module.exports = class PageSystem {
     constructor(client) {
         this.client = client;
         this.index = 0;
