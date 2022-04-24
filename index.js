@@ -9,6 +9,7 @@ module.exports = class PageSystem {
         this.message = null;
         this.interaction = null;
         this.collector = null;
+        this.reply = null;
         this.ended = false;
         this.started = false;
         this.deleted = false;
@@ -60,7 +61,7 @@ module.exports = class PageSystem {
      */
     removeButton(customId) {
         const i = this.buttons.findIndex(btn => btn.customId === customId);
-        if (i < 0) this.buttons.slice(i,i+1);
+        if (i !== -1) this.buttons.splice(i, 1)
         return this;
     }
     /**

@@ -1,32 +1,29 @@
 export = PageSystem;
 declare class PageSystem {
-    constructor(client: any);
+    constructor(client: Discord.Client);
     client: Discord.Client;
     index: number;
     id: string;
     embeds: Discord.MessageEmbed[];
-    message: Discord.Message<any> | null;
-    interaction: Discord.Interaction<any> | null;
+    message: any;
+    interaction: any;
+    reply: Discord.Message;
     collector: Discord.InteractionCollector<Discord.ButtonInteraction<Discord.CacheType>>;
     ended: boolean;
     started: boolean;
     deleted: boolean;
     duration: number;
-    emojis: {
-        previous: string;
-        stop: string;
-        next: string;
-    };
+    mainStyle: string;
+    buttons: Discord.MessageButtonOptions[];
     footer: (index: any, total: any) => string;
     filter: (i: any) => boolean;
     get ctx(): "MESSAGE" | "INTERACTION";
-    get _row(): {
-        name: string;
-        emoji: any;
-        style: string;
-    }[];
-    get type(): string;
+    get type(): "message" | "interaction";
     get endUntill(): number;
+    get currentEmbed(): Discord.MessageEmbed;
+    addButton(o: Discord.MessageButtonOptions): this;
+    removeButton(customId: string): this;
+    editButton(customId: string, o: Discord.MessageButtonOptions): this;
     getRow(disabled?: boolean): Discord.MessageActionRow | null;
     setUserID(user: Discord.UserResolvable): this;
     setFooter(func: Function): this;
@@ -39,11 +36,11 @@ declare class PageSystem {
     next(): Promise<void> | import(".");
     previous(): Promise<void> | import(".");
     setIndex(index: number): this;
+    fixEmbedFooters(): void;
     edit(opts: Discord.MessageEditOptions): Promise<Discord.Message<boolean>>;
     disableButtons(): Promise<Discord.Message<boolean>>;
     end(): Promise<void> | Promise<Discord.Message<boolean>>;
     delete(): Promise<Discord.Message<boolean>>;
-    get currentEmbed(): Discord.MessageEmbed;
     update(): Promise<Discord.Message<boolean>>;
     getOpts(disabled?: boolean): {
         embeds: Discord.MessageEmbed[];
@@ -53,8 +50,7 @@ declare class PageSystem {
     isInteraction(): boolean;
     canEdit(): boolean;
     isValidCtx(ctx: any): boolean;
-    checkForErrors(msg: any): any[];
-    start(ctx: any): Promise<Discord.Message<boolean>>;
-    reply: Discord.Message;
+    checkForErrors(msg: any): string[];
+    start(ctx: any): Promise<import(".")>;
 }
 import Discord = require("discord.js");
