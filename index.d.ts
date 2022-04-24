@@ -1,36 +1,24 @@
-import {
-    Client,
-    CommandInteraction, 
-    ButtonInteraction,
-    InteractionCollector,
-    Message,
-    MessageActionRow,
-    MessageEmbed,
-    MessageOptions,
-    UserResolvable
-} from "discord.js";
-
-export class PageSystem {
-    client: Client | null;
+export = PageSystem;
+declare class PageSystem {
+    constructor(client: any);
+    client: Discord.Client;
     index: number;
-    id: string | null;
-    embeds: MessageEmbed[];
-    message: Message | null;
-    interaction: CommandInteraction | null;
-    collector: InteractionCollector<ButtonInteraction> | null;
+    id: string;
+    embeds: Discord.MessageEmbed[];
+    message: Discord.Message<any> | null;
+    interaction: Discord.Interaction<any> | null;
+    collector: Discord.InteractionCollector<Discord.ButtonInteraction<Discord.CacheType>>;
     ended: boolean;
     started: boolean;
     deleted: boolean;
-    duration: number | null;
+    duration: number;
     emojis: {
         previous: string;
         stop: string;
         next: string;
     };
-    footer: Function;
-    filter: Function;
-    reply: Message | null;
-    constructor(client: Client);
+    footer: (index: any, total: any) => string;
+    filter: (i: any) => boolean;
     get ctx(): "MESSAGE" | "INTERACTION";
     get _row(): {
         name: string;
@@ -39,32 +27,34 @@ export class PageSystem {
     }[];
     get type(): string;
     get endUntill(): number;
-    getRow(disabled?: boolean): MessageActionRow;
-    setUserID(user: UserResolvable): this;
+    getRow(disabled?: boolean): Discord.MessageActionRow | null;
+    setUserID(user: Discord.UserResolvable): this;
     setFooter(func: Function): this;
-    setEmbeds(embeds: MessageEmbed[]): this;
-    addEmbed(embed: MessageEmbed): this;
-    fixEmbeds(embeds: MessageEmbed[]): MessageEmbed[];
-    addEmbeds(embeds: MessageEmbed[]): this;
+    setEmbeds(embeds: Discord.MessageEmbed[]): this;
+    addEmbed(embed: Discord.MessageEmbed): this;
+    fixEmbeds(embeds: Discord.MessageEmbed | Discord.MessageEmbed[] | Discord.MessageEmbed[][]): Discord.MessageEmbed[];
+    addEmbeds(embeds: Discord.MessageEmbed[]): this;
     setDuration(duration: number): this;
     addDuration(duration: number): this;
-    next(): Promise<void> | this;
-    previous(): Promise<void> | this;
+    next(): Promise<void> | import(".");
+    previous(): Promise<void> | import(".");
     setIndex(index: number): this;
-    edit(opts: MessageOptions): Promise<import("discord-api-types").APIMessage | Message<boolean>>;
-    disableButtons(): Promise<import("discord-api-types").APIMessage | Message<boolean>>;
-    end(): Promise<void> | Promise<import("discord-api-types").APIMessage | Message<boolean>>;
-    delete(): Promise<void> | Promise<Message<boolean>>;
-    embed(): MessageEmbed;
-    update(): Promise<import("discord-api-types").APIMessage | Message<boolean>>;
+    edit(opts: Discord.MessageEditOptions): Promise<Discord.Message<boolean>>;
+    disableButtons(): Promise<Discord.Message<boolean>>;
+    end(): Promise<void> | Promise<Discord.Message<boolean>>;
+    delete(): Promise<Discord.Message<boolean>>;
+    get currentEmbed(): Discord.MessageEmbed;
+    update(): Promise<Discord.Message<boolean>>;
     getOpts(disabled?: boolean): {
-        embeds: MessageEmbed[];
-        components: MessageActionRow[];
+        embeds: Discord.MessageEmbed[];
+        components: Discord.MessageActionRow[];
     };
     isMessage(): boolean;
     isInteraction(): boolean;
     canEdit(): boolean;
-    isValidCtx(ctx: CommandInteraction | Message): boolean;
-    checkForErrors(msg: CommandInteraction | Message): string[];
-    start(ctx: CommandInteraction | Message): Promise<Message<boolean>>;
+    isValidCtx(ctx: any): boolean;
+    checkForErrors(msg: any): any[];
+    start(ctx: any): Promise<Discord.Message<boolean>>;
+    reply: Discord.Message;
 }
+import Discord = require("discord.js");

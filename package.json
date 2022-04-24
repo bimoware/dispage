@@ -1,13 +1,12 @@
 {
   "name": "dispage",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "The easiest and most customizable way to add discord.js an embed button page system to your bot.",
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "type":"commonjs",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/voxlinou1/dispage.git"

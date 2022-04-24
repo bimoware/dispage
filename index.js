@@ -20,6 +20,7 @@ module.exports = class PageSystem {
         };
         this.footer = (index, total) => total - 1 ? `📜 Page ${index}/${total}` : '';
         this.filter = (i) => this.id === i.user.id;
+        console.log(this);
     }
     get ctx() {
         return this.message ? "MESSAGE" : this.interaction ? "INTERACTION" : null;
@@ -149,6 +150,7 @@ module.exports = class PageSystem {
     next() {
         if (this.canEdit()) return this.setIndex(this.index + 1)
         else return Promise.resolve();
+
     }
 
     previous() {
@@ -168,7 +170,6 @@ module.exports = class PageSystem {
 
     /**
      * @param {Discord.MessageEditOptions} opts 
-     * @returns {this}
      */
     edit(opts) {
         if (this.deleted) return Promise.reject('No message to edit.')
@@ -219,7 +220,8 @@ module.exports = class PageSystem {
         return this.ctx && this.started && !this.ended && !this.deleted;
     }
     isValidCtx(ctx) {
-        return ['DEFAULT', 'REPLY', 'APPLICATION_COMMAND', 'CONTEXT_MENU_COMMAND'].includes(ctx?.type);
+        return ['DEFAULT', 'REPLY', 'APPLICATION_COMMAND', 'CONTEXT_MENU_COMMAND']
+            .includes(ctx?.type);
     }
     checkForErrors(msg) {
         let errors = []
@@ -227,15 +229,31 @@ module.exports = class PageSystem {
         if (this.ended) add('Page system has ended already.')
         if (this.deleted) add('Page system has previously been deleted.')
         if (!msg) add('No message/interaction given.');
-        if (msg.author) {
+        if(msg.author){
             this.message = msg;
             this.setUserID(msg.author.id)
-        } else if (msg.user) {
+        } else if(msg.user) {
             this.interaction = msg;
             this.setUserID(msg.user.id)
         } else add(`.start(<ctx>) -> ctx is neiher an interaction nor a message.`);
-
+        
+        /*
+        if (msg instanceof Discord.Message) {
+            this.message = msg;
+            this.setUserID(msg.author.id)
+        } else if (msg instanceof Discord.Interaction) {
+            this.interaction = msg;
+            this.setUserID(msg.user.id)
+            
+        */
+       
         if (!this.embeds.length) add('Embed array is empty.')
+        /*
+        else this.embeds.forEach((embed, i) =>{
+            if(!(embed instanceof Discord.MessageEmbed)) add(`"Embed" at position ${i} is not an embed.`);
+        })
+        */
+
         if (typeof (this.index) !== "number"
             || isNaN(this.index)
             || this.index < 0
@@ -261,10 +279,14 @@ module.exports = class PageSystem {
         if (errors.length)
             throw new Error("Errors ecountered :\n" + errors.map((e, i) => `${i + 1} - ${e}`).join('\n'))
 
+        /**
+         * @type {Discord.Message} 
+         */
         this.reply = await this[this.type].reply({
             fetchReply: true,
             ...this.getOpts()
-        });
+        })
+        this.started = true;
 
         if (!this.reply) throw new Error('Could not fetch reply of the message/interaction');
         if (!this.getRow()) return;
@@ -274,21 +296,22 @@ module.exports = class PageSystem {
             time: this.duration,
         });
 
-        this.collector.on('collect', (int) => {
+        this.collector.on('collect', async (int) => {
             if (!this.filter(int)) return;
             const id = int.customId;
-            if (id === "stop") this.collector.emit('end')
+            if (id === "stop") await this.end();
             else {
                 switch (id) {
                     case 'next':
-                        this.next();
+                        await this.next();
                         break;
                     case 'previous':
-                        this.previous();
+                        await this.previous();
                         break;
                 }
-                if (!this.ended) this.update();
+                if (!this.ended) await this.update();
             }
+            int.deferUpdate()
         });
 
         this.collector.on('end', () => { this.end() });
