@@ -1,4 +1,14 @@
-import { Client, CommandInteraction, ButtonInteraction, InteractionCollector, Message, MessageActionRow, MessageEmbed, MessageOptions, UserResolvable } from "discord.js";
+import {
+    Client,
+    CommandInteraction, 
+    ButtonInteraction,
+    InteractionCollector,
+    Message,
+    MessageActionRow,
+    MessageEmbed,
+    MessageOptions,
+    UserResolvable
+} from "discord.js";
 export declare class PageSystem {
     client: Client | null;
     index: number;
