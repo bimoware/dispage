@@ -1,6 +1,10 @@
 {
   "name": "dispage",
+<<<<<<< HEAD
   "version": "1.0.2",
+=======
+  "version": "1.0.0",
+>>>>>>> 972f500e522dfdaa4e5a8b45dde8602dbd65491a
   "description": "The easiest and most customizable way to add discord.js an embed button page system to your bot.",
   "main": "index.js",
   "types": "index.d.ts",
