@@ -45,6 +45,10 @@ module.exports = class PageSystem {
         return this.collector ? (Date.now() - this.collector.options.time) : null;
     }
 
+    /**
+     * @param {boolean} disabled 
+     * @returns {Discord.MessageActionRow | null}
+     */
     getRow(disabled = false) {
         let ar = new Discord.MessageActionRow()
         let previous = this.embeds[this.index - 1];
@@ -55,7 +59,7 @@ module.exports = class PageSystem {
                 || (a.name == "next" && !next)
                 || false;
 
-            let button = new MessageButton()
+            let button = new Discord.MessageButton()
                 .setCustomId(a.name)
                 .setEmoji(a.emoji)
                 .setStyle(a.style)
@@ -67,25 +71,46 @@ module.exports = class PageSystem {
         return ar.components.length ? ar : null;
     }
 
+    /**
+     * @param {Discord.UserResolvable} user 
+     * @returns {this}
+     */
     setUserID(user) {
         this.id = this.client.users.resolve(user).id;
         return this;
     }
 
+    /**
+     * @param {Function} func 
+     * @returns {this}
+     */
     setFooter(func) {
         this.footer = func || (() => '');
         return this;
     }
 
+    /**
+     * @param {Discord.MessageEmbed[]} embeds 
+     * @returns {this}
+     */
     setEmbeds(embeds) {
         embeds = this.fixEmbeds(embeds);
         this.embeds = embeds;
         return this;
     }
 
+    /**
+     * @param {Discord.MessageEmbed} embed
+     * @returns {this}
+     */
     addEmbed(embed) {
         return this.addEmbeds([embed]);
     }
+
+    /**
+     * @param {Discord.MessageEmbed | Discord.MessageEmbed[] | Discord.MessageEmbed[][]} embeds 
+     * @returns {Discord.MessageEmbed[]}
+     */
     fixEmbeds(embeds) {
         // embed
         embeds = Array.isArray(embeds[0]) ? embeds[0] : embeds
@@ -93,16 +118,29 @@ module.exports = class PageSystem {
         return embeds;
     }
 
+    /**
+     * @param {Discord.MessageEmbed[]} embeds
+     * @returns {this}
+     */
     addEmbeds(embeds) {
         embeds = this.fixEmbeds(embeds);
         embeds.forEach(embed => this.addEmbed(embed));
         return this;
     }
 
+    /**
+     * @param {number} duration 
+     * @returns {this}
+     */
     setDuration(duration) {
         this.duration = duration
         return this;
     }
+
+    /**
+     * @param {number} duration 
+     * @returns {this}
+     */
     addDuration(duration) {
         this.duration += duration
         return this;
@@ -118,14 +156,22 @@ module.exports = class PageSystem {
         else return Promise.resolve();
     }
 
+    /**
+     * @param {number} index 
+     * @returns {this}
+     */
     setIndex(index) {
         this.index = index;
         if (this.canEdit()) this.update()
         return this;
     }
 
+    /**
+     * @param {Discord.MessageEditOptions} opts 
+     * @returns {this}
+     */
     edit(opts) {
-        if (this.ended || this.deleted) return Promise.reject('No message to edit.')
+        if (this.deleted) return Promise.reject('No message to edit.')
         return this.reply.edit(opts)
     }
 
@@ -134,7 +180,7 @@ module.exports = class PageSystem {
     }
 
     end() {
-        if(this.ended) return Promise.resolve();
+        if (this.ended) return Promise.resolve();
         this.ended = true;
         return this.disableButtons()
     }
@@ -142,12 +188,15 @@ module.exports = class PageSystem {
     delete() {
         this.deleted = true;
         this.ended = true;
-        if(this.reply) return this.reply.delete();
+        if (this.reply) return this.reply.delete();
         else return Promise.reject('No message to edit.');
     }
 
-    embed() {
-        return this.embeds[this.index]
+    /** 
+     * @returns {Discord.MessageEmbed}
+     */
+    get currentEmbed() {
+        return this.embeds[this.index];
     }
 
     update() {
@@ -156,7 +205,7 @@ module.exports = class PageSystem {
 
     getOpts(disabled = false) {
         return {
-            embeds: [this.embed()],
+            embeds: [this.currentEmbed],
             components: [this.getRow(disabled)]
         };
     }
@@ -170,7 +219,7 @@ module.exports = class PageSystem {
         return this.ctx && this.started && !this.ended && !this.deleted;
     }
     isValidCtx(ctx) {
-        return ctx instanceof Discord.Message || ctx instanceof Discord.CommandInteraction;
+        return ['DEFAULT', 'REPLY', 'APPLICATION_COMMAND', 'CONTEXT_MENU_COMMAND'].includes(ctx?.type);
     }
     checkForErrors(msg) {
         let errors = []
@@ -178,22 +227,15 @@ module.exports = class PageSystem {
         if (this.ended) add('Page system has ended already.')
         if (this.deleted) add('Page system has previously been deleted.')
         if (!msg) add('No message/interaction given.');
-        if (msg instanceof Discord.Message) {
+        if (msg.author) {
             this.message = msg;
             this.setUserID(msg.author.id)
-        } else if (msg instanceof Discord.CommandInteraction) {
+        } else if (msg.user) {
             this.interaction = msg;
             this.setUserID(msg.user.id)
-        } else if (msg instanceof Discord.Interaction) {
-            add(`${msg} is an interaction but not a command (it's type is "${msg.type}").`)
-        } else add(`${msg} is neiher an interaction or a message.`);
+        } else add(`.start(<ctx>) -> ctx is neiher an interaction nor a message.`);
 
         if (!this.embeds.length) add('Embed array is empty.')
-        else {
-            this.embeds.forEach((embed, i) => {
-                if (!(embed instanceof Discord.MessageEmbed)) add(`Embed at position ${i} is not an embed.`);
-            })
-        }
         if (typeof (this.index) !== "number"
             || isNaN(this.index)
             || this.index < 0
@@ -214,7 +256,7 @@ module.exports = class PageSystem {
     }
 
     async start(ctx) {
-        if(!this.id) this.id = ctx.author?.id || ctx.user?.id || this.id;
+        if (!this.id) this.id = ctx.author?.id || ctx.user?.id || this.id;
         let errors = this.checkForErrors(ctx)
         if (errors.length)
             throw new Error("Errors ecountered :\n" + errors.map((e, i) => `${i + 1} - ${e}`).join('\n'))
@@ -233,21 +275,23 @@ module.exports = class PageSystem {
         });
 
         this.collector.on('collect', (int) => {
-            if(!this.filter(int)) return;
-            switch (int.customId) {
-                case 'next':
-                    this.next();
-                    break;
-                case 'previous':
-                    this.previous();
-                    break;
-                case 'stop':
-                    this.collector.emit('end');
+            if (!this.filter(int)) return;
+            const id = int.customId;
+            if (id === "stop") this.collector.emit('end')
+            else {
+                switch (id) {
+                    case 'next':
+                        this.next();
+                        break;
+                    case 'previous':
+                        this.previous();
+                        break;
+                }
+                if (!this.ended) this.update();
             }
-            if (!this.ended) this.update();
         });
 
-        this.collector.on('end', () =>{ this.end() });
+        this.collector.on('end', () => { this.end() });
 
         return this.reply;
     }
