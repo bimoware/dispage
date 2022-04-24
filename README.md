@@ -69,6 +69,7 @@ client.on('messageCreate', message =>{
 ```
 ## Properties
 > Instead of (for example) setting `index` to 1 by hand. Use the build-in `setIndex` method. Same for `embeds`, `ended`, `id` etc.. `mainStyle` for example on the other hand can be overwritten ^^
+
 | **Name** | **Type** | **Default** |
 |:---:|:---:|:---:|
 | `client` | `Client` |  |
@@ -90,6 +91,7 @@ client.on('messageCreate', message =>{
 
 ## Methods
 > On the `Returns` column, `self` means that the methode returns the original instance of the class. Like MessageEmbed where we can call multiple times multiple methodes on the same variable.
+
 | **Name** 	| **Arguments** 	| **Required** 	| **Returns** 	|
 |:---:	|:---:	|:---:	|:---:	|
 | `addButton` 	| `MessageButtonOptions` 	|  	| `self` 	|
