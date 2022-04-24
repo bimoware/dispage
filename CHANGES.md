@@ -1,3 +1,6 @@
+# 1.0.0
+- Published the package
+
 # 1.0.1
 - Better README.md
 - Added typescript notation support for typescript programmers
