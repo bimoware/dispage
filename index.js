@@ -1,10 +1,9 @@
 const Discord = require('discord.js');
 
-module.exports = class PageSystem {
+module.exports = class Dispage {
     constructor(client) {
         this.client = client;
         this.index = 0;
-        this.id = null;
         this.embeds = [];
         this.message = null;
         this.interaction = null;
@@ -28,24 +27,67 @@ module.exports = class PageSystem {
             }
         });
         this.footer = (index, total) => total - 1 ? `📜 Page ${index}/${total}` : '';
-        this.filter = (i) => this.id === i.user.id;
+        this.filter = (int) => this.users.includes(int.user.id);
+        this.showDisabledButtons = true;
+        this._userIDs = new Set();
+    }
+    get users() {
+        return Array.from(this._userIDs)
     }
     get ctx() {
         return this.message ? "MESSAGE" : this.interaction ? "INTERACTION" : null;
     }
     get type() {
-        return this.ctx.toLowerCase();
+        return this.ctx?.toLowerCase() ?? null;
     }
-
     get endUntill() {
         return this.collector ? (Date.now() - this.collector.options.time) : null;
     }
-
-    /** 
-     * @returns {Discord.MessageEmbed}
-     */
+    /** @returns {Discord.MessageEmbed} */
     get currentEmbed() {
         return this.embeds[this.index];
+    }
+    _getId(user) {
+        return this.client?.users.resolve(user)?.id || user;
+    }
+    setMainStyle(style) {
+        this.mainStyle = style ?? mainStyle;
+        return this;
+    }
+    shouldShowDisabledButtons(should = true) {
+        this.showDisabledButtons = should;
+        return this;
+    }
+    /**
+     * @param {Discord.UserResolvable} user 
+     * @returns {this}
+     */
+    removeUser(user) {
+        this._userIDs.delete(this._getId(user));
+        return this;
+    }
+    /**
+     * @param {Discord.UserResolvable} user 
+     * @returns {this}
+     */
+    addUser(user) {
+        this._userIDs.add(this._getId(user));
+        return this;
+    }
+    /**
+     * @param {Discord.UserResolvable} user 
+     * @returns {this}
+     */
+    setUser(user) {
+        this._userIDs = new Set([this._getId(user)]);
+        return this;
+    }
+
+    /** @deprecated Use .setUser() instead. */
+    setUserID(user) {
+        console.warn('.setUserID() is deprecated. Please use .setUser() instead.')
+        this._userIDs = new Set([this._getId(user)]);
+        return this;
     }
     /**
      * @param {object} o
@@ -69,17 +111,17 @@ module.exports = class PageSystem {
      * @param {object} o
      * @returns {this}
      */
-    editButton(customId,o) {
+    editButton(customId, o) {
         const i = this.buttons.findIndex(btn => btn.customId === customId);
         if (i < 0) this.addButton(o)
-        else this.buttons[i] = { ...this.buttons[i], ...o};
+        else this.buttons[i] = { ...this.buttons[i], ...o };
         return this;
     }
     /**
      * @param {boolean} disabled 
      * @returns {Discord.MessageActionRow | null}
      */
-    getRow(disabled = false) {
+    getRows(disabled = false) {
         let ar = new Discord.MessageActionRow()
         let previous = this.embeds[this.index - 1];
         let next = this.embeds[this.index + 1];
@@ -97,16 +139,8 @@ module.exports = class PageSystem {
             return ar.addComponents(button);
         }
         this.buttons.forEach(format);
-        return ar.components.length ? ar : null;
-    }
-
-    /**
-     * @param {Discord.UserResolvable} user 
-     * @returns {this}
-     */
-    setUserID(user) {
-        this.id = this.client.users.resolve(user).id;
-        return this;
+        if (!this.showDisabledButtons) ar.components = ar.components.filter(c => !c.disabled);
+        return ar.components.length ? [ar] : null;
     }
 
     /**
@@ -126,11 +160,10 @@ module.exports = class PageSystem {
      * @returns {this}
      */
     setEmbeds(embeds) {
-        embeds = this.fixEmbeds(embeds);
+        embeds = this._fixEmbeds(embeds);
         this.embeds = embeds;
         return this;
     }
-
     /**
      * @param {Discord.MessageEmbed} embed
      * @returns {this}
@@ -140,24 +173,24 @@ module.exports = class PageSystem {
     }
 
     /**
-     * @param {Discord.MessageEmbed | Discord.MessageEmbed[] | Discord.MessageEmbed[][]} embeds 
-     * @returns {Discord.MessageEmbed[]}
-     */
-    fixEmbeds(embeds) {
-        // embed
-        embeds = Array.isArray(embeds[0]) ? embeds[0] : embeds
-        embeds = embeds instanceof Discord.MessageEmbed ? [embeds] : embeds;
-        return embeds;
-    }
-
-    /**
      * @param {Discord.MessageEmbed[]} embeds
      * @returns {this}
      */
     addEmbeds(embeds) {
-        embeds = this.fixEmbeds(embeds);
+        embeds = this._fixEmbeds(embeds);
         embeds.forEach(embed => this.addEmbed(embed));
         return this;
+    }
+
+    /**
+     * @param {Discord.MessageEmbed | Discord.MessageEmbed[] | Discord.MessageEmbed[][]} embeds 
+     * @returns {Discord.MessageEmbed[]}
+     */
+    _fixEmbeds(embeds) {
+        // embed
+        embeds = Array.isArray(embeds[0]) ? embeds[0] : embeds
+        embeds = embeds instanceof Discord.MessageEmbed ? [embeds] : embeds;
+        return embeds;
     }
 
     /**
@@ -198,7 +231,8 @@ module.exports = class PageSystem {
         if (this.canEdit()) this.update()
         return this;
     }
-    fixEmbedFooters() {
+
+    _fixEmbedFooters() {
         return this.embeds.forEach(embed => {
             embed.setFooter({ text: this.footer(this.index + 1, this.embeds.length) })
         });
@@ -208,12 +242,12 @@ module.exports = class PageSystem {
      */
     edit(opts) {
         if (this.deleted) return Promise.reject('No message to edit.')
-        this.fixEmbedFooters();
+        this._fixEmbedFooters();
         return this.reply.edit(opts)
     }
 
     disableButtons() {
-        return this.edit({ components: [this.getRow(true)] })
+        return this.edit({ components: this.getRows(true) })
     }
 
     end() {
@@ -234,9 +268,10 @@ module.exports = class PageSystem {
     }
 
     getOpts(disabled = false) {
+        this._fixEmbedFooters();
         return {
             embeds: [this.currentEmbed],
-            components: [this.getRow(disabled)]
+            components: this.getRows(disabled)
         };
     }
     isMessage() {
@@ -260,28 +295,13 @@ module.exports = class PageSystem {
         if (!msg) add('No message/interaction given.');
         if (msg.author) {
             this.message = msg;
-            this.setUserID(msg.author.id)
+            this.addUser(msg.author.id)
         } else if (msg.user) {
             this.interaction = msg;
-            this.setUserID(msg.user.id)
+            this.addUser(msg.user.id)
         } else add(`.start(<ctx>) -> ctx is neiher an interaction nor a message.`);
 
-        /*
-        if (msg instanceof Discord.Message) {
-            this.message = msg;
-            this.setUserID(msg.author.id)
-        } else if (msg instanceof Discord.Interaction) {
-            this.interaction = msg;
-            this.setUserID(msg.user.id)
-            
-        */
-
         if (!this.embeds.length) add('Embed array is empty.')
-        /*
-        else this.embeds.forEach((embed, i) =>{
-            if(!(embed instanceof Discord.MessageEmbed)) add(`"Embed" at position ${i} is not an embed.`);
-        })
-        */
 
         if (typeof (this.index) !== "number"
             || isNaN(this.index)
@@ -290,23 +310,28 @@ module.exports = class PageSystem {
         if (!this.embeds[this.index]) add(`No embed at index ${this.index}`);
 
         if (typeof (this.footer) !== "function")
-            add(`Footer is not a function but a ${typeof (this.footer)}.`)
+            add(`.footer is not a function but is a ${typeof (this.footer)}.`)
 
         if (typeof (this.filter) !== "function")
-            add(`Filter is not a function but a ${typeof (this.filter)}.`)
-
-        if (typeof (this.id) !== "string") add(`ID "${this.id}" is not a string.`)
-        else if (this.id.split(' ').some(c => !Number(c))) add(`ID "${this.id}" is not a valid user ID.`);
-
+            add(`.filter should be a function but is a ${typeof (this.filter)}.`)
+        if (typeof (this.showDisabledButtons) !== "boolean")
+            add(`.showDisabledButtons should be a boolean but is a ${typeof (this.showDisabledButtons)}`)
+        if (typeof (this.duration) !== "number")
+            add(`.duration should be a number but is a ${typeof this.duration}`)
+        this.users.forEach((id, i) => {
+            if (typeof (id) !== "string") add(`ID "${id}" at index ${i} is not a string but a ${typeof(id)}.`)
+            else if (id.split(' ').some(c => !Number(c))) add(`ID "${id}" at index ${i} is not a valid user ID.`);
+        })
         return errors;
     }
 
     async start(ctx) {
-        if (!this.id) this.id = ctx.author?.id || ctx.user?.id || this.id;
+        if (!this.users.length) this._userIDs.add(ctx.author?.id || ctx.user?.id);
         let errors = this.checkForErrors(ctx)
         if (errors.length)
             throw new Error("Errors ecountered :\n" + errors.map((e, i) => `${i + 1} - ${e}`).join('\n'))
 
+        this._fixEmbedFooters();
         /**
          * @type {Discord.Message} 
          */
@@ -319,7 +344,7 @@ module.exports = class PageSystem {
         })
 
         if (!this.reply) throw new Error('Could not fetch reply of the message/interaction');
-        if (!this.getRow()) return;
+        if (!this.getRows()) return;
 
         this.collector = this.reply.createMessageComponentCollector({
             componentType: 'BUTTON',
@@ -327,25 +352,26 @@ module.exports = class PageSystem {
         });
 
         this.collector.on('collect', async (int) => {
-            if (!this.filter(int)) return;
-            const id = int.customId;
-            if (id === "stop") await this.end();
-            else {
-                switch (id) {
-                    case 'next':
-                        await this.next();
-                        break;
-                    case 'previous':
-                        await this.previous();
-                        break;
+            if (this.users.includes(int.user.id)) {
+                if (!this.filter(int)) return;
+                const id = int.customId;
+                if (id === "stop") await this.end();
+                else {
+                    switch (id) {
+                        case 'next':
+                            await this.next();
+                            break;
+                        case 'previous':
+                            await this.previous();
+                            break;
+                    }
+                    if (!this.ended) await this.update();
                 }
-                if (!this.ended) this.update();
             }
             await int.deferUpdate().catch(() => 0);
         });
 
         this.collector.on('end', () => { this.end() });
-
         return this;
     }
 }
