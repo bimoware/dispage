@@ -14,13 +14,7 @@ declare class Dispage {
     deleted: boolean;
     duration: number;
     mainStyle: string;
-    buttons: {
-        customId: string;
-        emoji: string;
-        style: string;
-        label: string;
-    }[];
-//    footer: (index: number, total: number, embed: Embed) => string;
+    buttons: Discord.MessageButtonOptions[];
     filter: (int: Discord.ButtonInteraction) => boolean;
     _sdb: boolean;
     _userIDs: Set<string>;
@@ -41,8 +35,6 @@ declare class Dispage {
     removeButton(customId: ButtonId): this;
     editButton(customId: ButtonId, o: Discord.MessageButtonOptions): this;
     getRows(disabled?: boolean): Discord.MessageActionRow | null;
-//    setFooter(func: Function): this;
-//    disableFooter(): this;
     setEmbeds(embeds: Embed[]): this;
     addEmbed(embed: Embed): this;
     addEmbeds(embeds: Embed[]): this;
@@ -51,9 +43,9 @@ declare class Dispage {
     addDuration(duration: number): this;
     next(): Promise<this>;
     previous(): Promise<this>;
+    changeToPage(index: number): Promise<Message>;
     doesIndexExist(index: number): boolean;
     setIndex(index: number): this;
-//    _fixEmbedFooters(): void;
     edit(opts: Discord.MessageEditOptions): Promise<Message>;
     disableButtons(): Promise<Message>;
     end(): Promise<Message>;

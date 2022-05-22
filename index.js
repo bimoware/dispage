@@ -209,7 +209,6 @@ module.exports = class Dispage {
     _fixEmbeds(embeds) {
         embeds = Array.isArray(embeds[0]) ? embeds.flat(1) : embeds
         embeds = embeds?.type === "rich" ? [embeds] : embeds;
-        console.log(embeds);
         return embeds;
     }
 

@@ -26,8 +26,8 @@ npm i dispage
 ### Javascript
 ```js
 // Create a command to start the page system
-const { PageSystem } = require('dispage')
-const Discord = require('discord.js')
+const Dispage = require('dispage')
+const { Client, Intents, MessageEmbed } = require('discord.js')
 ```
 ### Typescript
 ```ts
@@ -36,94 +36,111 @@ import Discord from 'discord.js';
 ```
 ### Sample example
 ```js
-const client = new Discord.Client({
+const client = new Client({
     intents: [
-        Discord.Intents.FLAGS.GUILDS,
-        Discord.Intents.FLAGS.GUILD_MESSAGES
+        Intents.FLAGS.GUILDS,
+        Intents.FLAGS.GUILD_MESSAGES
     ]
 });
-// Make sure our bot is ready
-client.on('ready', () => console.log('I am ready!'))
-// Of course, log it in with our token
-client.login('TOKEN')
 
-// Where the fun begins
-client.on('messageCreate', message =>{
-    if(message.content === "!test"){
-        // Create the embeds that will be used.
+client.on('messageCreate', message => {
+    if (message.content === "!test") {
+
         const embeds = [
-            new Discord.MessageEmbed().setDescription('embed 1'),
-            new Discord.MessageEmbed().setDescription('embed 2'),
-            new Discord.MessageEmbed().setDescription('embed 3')
-        ];
-        // Create the page system
-        new PageSystem()
-          // Add the embeds previously created
-          .setEmbeds(embeds)
-          // In the end, start the page system on the message
-          .start(message)
-            // In case there is an error
+            'embed 1',
+            'embed 2 !!',
+            'embed 3 !?!',
+        ].map(desc => new MessageEmbed().setDescription(desc))
+        
+        new Dispage()
+            .setEmbeds(embeds)
+            .start(message)
             .catch(console.error);
     }
-  });
+});
+
+client.login('TOKEN_HERE')
+```
+![Simple example](https://iili.io/Xf3MhP.png)
+
+### If you want to push things further...
+```js
+        const embeds = [
+            'embed 1',
+            'embed 2 !!',
+            'embed 3 !?!',
+        ].map(desc => new MessageEmbed().setDescription(desc).setColor('#))
+        
+        new Dispage()
+            .setEmbeds(embeds)
+            .editButton('previous', { emoji : "824240081409540157", label: "Previous"})
+            .editButton('stop', { emoji : "824240081409540157" })
+            .editButton('next', { emoji : "824240024509874186", label: "Next"})
+            .start(message)
+            .catch(console.error);
 ```
 ## Properties
-> Instead of (for example) setting `index` to 1 by hand. Use the build-in `setIndex` method. Same for `embeds`, `ended`, `id` etc.. `mainStyle` for example on the other hand can be overwritten ^^
+> Instead of (for example) setting `index` to 1 by hand. Use the build-in (`setIndex`) method. Same for `embeds` (.setEmbeds), `ended` (.end()), duration (.setDuration) etc..
 
-| **Name** | **Type** | **Default** |
-|:---:|:---:|:---:|
-| `client` | `Client` |  |
+| **Property** | **Type** | **Default Value** |
+|---|---|---|
+| `client` | `Client` | `null` |
 | `index` | `number` | `0` |
-| `id` | `string` |  |
-| `embeds` | `MessageEmbed[]` | `[]` |
-| `message` | `Message \| null` |  |
-| `interaction` | `Interaction \| null` |  |
-| `reply` | `Message` |  |
-| `collector` | `InteractionCollector<ButtonInteraction>` |  |
+| `embeds` | `Embed[]` | `[]` |
+| `message` | `Message` | `null` |
+| `interaction` | `Interaction` | `null` |
+| `collector` | `InteractionCollector<ButtonInteraction>` | `null` |
+| `reply` | `Message` | `null` |
 | `ended` | `boolean` | `false` |
 | `started` | `boolean` | `false` |
 | `deleted` | `boolean` | `false` |
 | `duration` | `number` | `60000` |
 | `mainStyle` | `MessageButtonStyle` | `"PRIMARY"` |
 | `buttons` | `MessageButtonOptions[]` | `MessageButtonOptions[]` |
-| `footer` | `Function` | `(index,total) => "📜 Page "+index+"/"+total : ''` |
-| `filter` | `Function` | `i => this.id === i.user.id` |
 
 ## Methods
-> On the `Returns` column, `self` means that the methode returns the original instance of the class. Like MessageEmbed where we can call multiple times multiple methodes on the same variable.
+> On the `Return` column, `this` means that the methode returns the original instance of the class. Like discord.js's MessageEmbed where we can call multiple times multiple methods following themselves. Like this: `new Dispage().setMainStyle('SECONDARY').setIndex(2)` etc..
 
-| **Name** 	| **Arguments** 	| **Required** 	| **Returns** 	|
-|:---:	|:---:	|:---:	|:---:	|
-| `addButton` 	| `MessageButtonOptions` 	|  	| `self` 	|
-| `removeButton` 	| `String` 	|  	| `self` 	|
-| `editButton` 	| `String, MessageButtonOptions` 	|  	| `self` 	|
-| `getRow` 	| `boolean` 	|  	| `MessageActionRow` 	|
-| `setUserID` 	| `UserResolvable` 	|  	| `self` 	|
-| `setFooter` 	| `Function` 	|  	| `self` 	|
-| `setEmbeds` 	| `MessageEmbed[]` 	| ✅ 	| `self` 	|
-| `addEmbed` 	| `MessageEmbed` 	|  	| `self` 	|
-| `addEmbeds` 	| `MessageEmbed[]` 	|  	| `self` 	|
-| `fixEmbeds` 	| `MessageEmbed[] \| MessageEmbed \| MessageEmbed[][]` 	|  	| `MessageEmbed[]` 	|
-| `setDuration` 	| `Number` 	|  	| `self` 	|
-| `addDuration` 	| `Number` 	|  	| `self` 	|
-| `next` 	| ❌ 	|  	| `Promise` 	|
-| `previous` 	| ❌ 	|  	| `Promise` 	|
-| `setIndex` 	| `Number` 	|  	| `self` 	|
-| `fixEmbedFooters` 	| ❌ 	|  	| `void` 	|
-| `edit` 	| `MessageEditOptions` 	|  	| `Promise<Discord.Message>` 	|
-| `disableButtons` 	| ❌ 	|  	| `void` 	|
-| `end` 	| ❌ 	|  	| `void` 	|
-| `delete` 	| ❌ 	|  	| `void` 	|
-| `update` 	| ❌ 	|  	| `void` 	|
-| `getOpts` 	| `Boolean` 	|  	| `MessageOptions` 	|
-| `isMessage` 	| ❌ 	|  	| `boolean` 	|
-| `isInteraction` 	| ❌ 	|  	| `boolean` 	|
-| `canEdit` 	| ❌ 	|  	| `boolean` 	|
-| `isValidCtx` 	| `Message \| Interaction` 	|  	| `boolean` 	|
-| `checkForErrors` 	| `Message \| Interaction` 	|  	| `string[]` 	|
-| `start` 	| `Message \| Interaction` 	| ✅ 	| `self` 	|
+> [PS]: [⚠] MEANS **__[DEPRECATED]__** (Meaning you shouldn't use it anymore)
+
+|        **Name**       |          **Arguments**         |         **Return**        |
+|:---------------------:|:------------------------------:|:--------------------------:|
+|     `setMainStyle`    |      `MessageButtonStyle`      |           `this`           |
+| `showDisabledButtons` |            `boolean`           |           `this`           |
+|      `removeUser`     |             `User`             |           `this`           |
+|       `addUser`       |             `User`             |           `this`           |
+|       `setUser`       |             `User`             |           `this`           |
+|     `setUserID` ⚠     |            `string`            |           `this`           |
+|      `addButton`      |     `MessageButtonOptions`     |           `this`           |
+|     `removeButton`    |            `string`            |           `this`           |
+|      `editButton`     | `string, MessageButtonOptions` |           `this`           |
+|       `getRows`       |            `boolean`           |    `MessageActionRow[]`    |
+|      `setEmbeds`      |            `Embed[]`           |           `this`           |
+|       `addEmbed`      |             `Embed`            |           `this`           |
+|      `addEmbeds`      |            `Embed[]`           |           `this`           |
+|      `_fixEmbeds`     |  `Embed[] / Embed / Embed[][]` |          `Embed[]`         |
+|     `setDuration`     |            `number`            |           `this`           |
+|     `addDuration`     |            `number`            |           `this`           |
+|         `next`        |                ❌               |       `Promise<this>`      |
+|       `previous`      |                ❌               |       `Promise<this>`      |
+|     `changeToPage`    |            `number`            |     `Promise<Message>`     |
+|    `doesIndexExist`   |            `number`            |          `boolean`         |
+|       `setIndex`      |            `Number`            |           `this`           |
+|         `edit`        |      `MessageEditOptions`      | `Promise<Discord.Message>` |
+|    `disableButtons`   |                ❌               |           `void`           |
+|         `end`         |                ❌               |           `void`           |
+|        `delete`       |                ❌               |           `void`           |
+|        `update`       |                ❌               |           `void`           |
+|       `getOpts`       |            `Boolean`           |      `MessageOptions`      |
+|      `isMessage`      |                ❌               |          `boolean`         |
+|    `isInteraction`    |                ❌               |          `boolean`         |
+|       `canEdit`       |                ❌               |          `boolean`         |
+|      `isValidCtx`     |            `Context`           |          `boolean`         |
+|    `checkForErrors`   |            `Context`           |         `string[]`         |
+|        `start`        |            `Context`           |       `Promise<this>`      |
 
 ## Trouble
-Having a problem using <a href="https://npmjs.com/package/dispage">**dispage**</a> ? Open an <a href="https://github.com/voxlinou1/dispage/issues">issue</a> on <a href="https://github.com/voxlinou1/dispage">Github<a> & Don't hesitate to send a message to *`Vox#6198`* !
+Having a problem using <a href="https://npmjs.com/package/dispage">**dispage**</a> ? Open an <a href="https://github.com/voxlinou1/dispage/issues">issue</a> on <a href="https://github.com/voxlinou1/dispage">Github<a> & Don't hesitate to send a message to the discord tag below 👇 !
+
 ## Credits
 Made by voxlinou1 (*`Vox#6198`* on discord)

@@ -1,11 +1,11 @@
-const Discord = require('discord.js')
-const client = new Discord.Client({
+const { Client, Intents, MessageEmbed } = require('discord.js')
+const Dispage = require('dispage')
+const client = new Client({
     intents: [
-        Discord.Intents.FLAGS.GUILDS,
-        Discord.Intents.FLAGS.GUILD_MESSAGES
+        Intents.FLAGS.GUILDS,
+        Intents.FLAGS.GUILD_MESSAGES
     ]
 });
-const Dispage = require('dispage')
 
 client.on('messageCreate', message => {
     if (message.content === "!test") {
@@ -14,8 +14,7 @@ client.on('messageCreate', message => {
             'embed 1',
             'embed 2 !!',
             'embed 3 !?!',
-            'embed 4 !!!!!!!!?'
-        ].map(desc => new Discord.MessageEmbed().setDescription(desc))
+        ].map(desc => new MessageEmbed().setDescription(desc))
         
         new Dispage()
             .setEmbeds(embeds)
