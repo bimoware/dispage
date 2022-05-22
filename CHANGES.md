@@ -15,9 +15,24 @@
 
 # 1.0.3
 - Added .addUser, .removeUser and .setUser to add a user id to the people who can interact with the buttons.
-- deprecated .addUserID by .addUser for better efficiency and flexibility.
+- [DEPRECATED] .addUserID by .addUser for better efficiency and flexibility.
 - Added .setMainStyle() to change from the default PRIMARY style (for left and right mostly.)
 - Users not allowed in the embed are now getting their interaction deferred and given an ephemeral response
 - Made some properties & methods private for better experience with IDE's docs
 - .getRow() replaced now by .getRow**s**();
 - Improved index.d.ts.
+
+# 1.0.4
+- Removed automatic footer as it's not user-friendly
+- Collected moved to another method for possibility of change
+- If the stop button is pressed, the embeds will disapear but if it's only the time that runs out. The buttons will be disabled only.
+- Built-in .doesIndexExist()
+- Types for typescript (Context, User, Message and Embed & ButtonId)
+- Methods that starts with _ should only be used inside the class.
+- Added an example.js file to copy/paste
+- Added a tsconfig.json for efficiency and reliable experience while updating the package
+- .addDuration not crashing when .setDuration has been used with a none-number
+- async every method for better error handling and crash path tracability
+- .canEdit that returns true if dispage has neither stopped, been deleted, the time has run out and the page system has been sent and successfully started
+- .editButton, .createButton and .removeButton to manipulate buttons on screen and create existing imaginations
+- Better JSDoc for none-typescript cases.

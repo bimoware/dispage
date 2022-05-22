@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "module": "commonJs",
+        "removeComments": true,
+        "declaration": true,
+        "emitDeclarationOnly": true,
+        "allowJs": true
+    },
+    "files": [
+        "index.js"
+    ]
+}

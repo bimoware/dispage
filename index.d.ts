@@ -1,29 +1,13 @@
-import {
-    Client,
-    InteractionCollector,
-    UserResolvable,
-    MessageEmbed,
-    Interaction,
-    Message,
-    MessageOptions,
-    MessageEditOptions,
-    MessageActionRow,
-    MessageButtonOptions,
-    MessageButtonStyle,
-    ButtonInteraction
-} from "discord.js";
-
-type Context = Interaction | Message
-
 export = Dispage;
+// Main
 declare class Dispage {
-    constructor(client: Client);
-    client: Client;
+    constructor(client: Discord.Client);
+    client: Discord.Client;
     index: number;
-    embeds: MessageEmbed[];
+    embeds: Embed[];
     message: Message;
-    interaction: Interaction;
-    collector: InteractionCollector<ButtonInteraction>;
+    interaction: Discord.Interaction;
+    collector: Discord.InteractionCollector<Discord.ButtonInteraction>;
     reply: Message;
     ended: boolean;
     started: boolean;
@@ -36,51 +20,63 @@ declare class Dispage {
         style: string;
         label: string;
     }[];
-    footer: (index: number, total: number) => string;
-    filter: (int: ButtonInteraction) => boolean;
-    showDisabledButtons: boolean;
-    private _userIDs: Set<string>;
+//    footer: (index: number, total: number, embed: Embed) => string;
+    filter: (int: Discord.ButtonInteraction) => boolean;
+    _sdb: boolean;
+    _userIDs: Set<string>;
     get users(): string[];
     get ctx(): "MESSAGE" | "INTERACTION";
     get type(): string;
     get endUntill(): number;
-    get currentEmbed(): MessageEmbed;
-    _getId(user: UserResolvable): string;
-    setMainStyle(style: MessageButtonStyle): this;
-    shouldShowDisabledButtons(should?: boolean): this;
-    removeUser(user: UserResolvable): this;
-    addUser(user: UserResolvable): this;
-    setUser(user: UserResolvable): this;
+    get currentEmbed(): Embed;
+    _getId(user: User): string;
+    setMainStyle(style: Discord.MessageButtonStyleResolvable): this;
+    showDisabledButtons(should: boolean): this;
+    removeUser(user: User): this;
+    addUser(user: User): this;
+    setUser(user: User): this;
     /** @deprecated Use .setUser() instead. */
-    setUserID(user: UserResolvable): this;
-    addButton(o: object): this;
-    removeButton(customId: string): this;
-    editButton(customId: string, o: object): this;
-    getRows(disabled?: boolean): MessageActionRow | null;
-    setFooter(func: Function): this;
-    setEmbeds(embeds: MessageEmbed[]): this;
-    addEmbed(embed: MessageEmbed): this;
-    addEmbeds(embeds: MessageEmbed[]): this;
-    _fixEmbeds(embeds: MessageEmbed | MessageEmbed[] | MessageEmbed[][]): MessageEmbed[];
+    setUserID(user: any): this;
+    addButton(o: Discord.MessageButtonOptions): this;
+    removeButton(customId: ButtonId): this;
+    editButton(customId: ButtonId, o: Discord.MessageButtonOptions): this;
+    getRows(disabled?: boolean): Discord.MessageActionRow | null;
+//    setFooter(func: Function): this;
+//    disableFooter(): this;
+    setEmbeds(embeds: Embed[]): this;
+    addEmbed(embed: Embed): this;
+    addEmbeds(embeds: Embed[]): this;
+    _fixEmbeds(embeds: Embed | Embed[] | Embed[][]): Embed[];
     setDuration(duration: number): this;
     addDuration(duration: number): this;
-    next(): Promise<void> | this;
-    previous(): Promise<void> | this;
+    next(): Promise<this>;
+    previous(): Promise<this>;
+    doesIndexExist(index: number): boolean;
     setIndex(index: number): this;
-    _fixEmbedFooters(): void;
-    edit(opts: MessageEditOptions): Promise<Message<boolean>>;
-    disableButtons(): Promise<Message<boolean>>;
-    end(): Promise<void> | Promise<Message<boolean>>;
-    delete(): Promise<Message<boolean>>;
-    update(): Promise<Message<boolean>>;
+//    _fixEmbedFooters(): void;
+    edit(opts: Discord.MessageEditOptions): Promise<Message>;
+    disableButtons(): Promise<Message>;
+    end(): Promise<Message>;
+    delete(): Promise<Message>;
+    update(): Promise<Message>;
     getOpts(disabled?: boolean): {
-        embeds: MessageEmbed[];
-        components: MessageActionRow;
+        embeds: Embed[];
+        components: Discord.MessageActionRow;
     };
     isMessage(): boolean;
     isInteraction(): boolean;
     canEdit(): boolean;
     isValidCtx(ctx: Context): boolean;
+    _createCollector(reply: Message): Discord.InteractionCollector<Discord.ButtonInteraction>;
     checkForErrors(msg: Context): string[];
-    start(ctx: Context): this;
+    start(ctx: Context): Promise<this>;
 }
+// Types
+type ButtonId = "previous" | "stop" | "next" | string
+type Message = Discord.Message
+type Embed = Discord.MessageEmbed
+type User = Discord.UserResolvable
+type Context = Discord.Message | Discord.Interaction
+
+// Packages
+import Discord = require("discord.js");

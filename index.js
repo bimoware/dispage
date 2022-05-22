@@ -1,9 +1,10 @@
 const Discord = require('discord.js');
-
 module.exports = class Dispage {
+    /** @param {Discord.Client} client  */
     constructor(client) {
         this.client = client;
         this.index = 0;
+        /** @type {Discord.MessageEmbed[]} */
         this.embeds = [];
         this.message = null;
         this.interaction = null;
@@ -26,9 +27,8 @@ module.exports = class Dispage {
                 label: arr[3]
             }
         });
-        this.footer = (index, total) => total - 1 ? `📜 Page ${index}/${total}` : '';
         this.filter = (int) => this.users.includes(int.user.id);
-        this.showDisabledButtons = true;
+        this._sdb = true;
         this._userIDs = new Set();
     }
     get users() {
@@ -54,11 +54,17 @@ module.exports = class Dispage {
         this.mainStyle = style ?? mainStyle;
         return this;
     }
-    shouldShowDisabledButtons(should = true) {
-        this.showDisabledButtons = should;
+    /**
+     * If 
+     * @param {boolean} should 
+     * @returns {this}
+     */
+    showDisabledButtons(should) {
+        this._sdb = should ?? true;
         return this;
     }
     /**
+     * Rmoves a user from the list of users allowed to interact with the buttons
      * @param {Discord.UserResolvable} user 
      * @returns {this}
      */
@@ -67,6 +73,7 @@ module.exports = class Dispage {
         return this;
     }
     /**
+     * Adds a user to the list of users allowed to interact with the buttons
      * @param {Discord.UserResolvable} user 
      * @returns {this}
      */
@@ -75,6 +82,8 @@ module.exports = class Dispage {
         return this;
     }
     /**
+     * Sets the user being the only one allowed to interact with the buttons
+     * @tip To have multiple users beeing able to interact with the buttons, use .addUser()
      * @param {Discord.UserResolvable} user 
      * @returns {this}
      */
@@ -86,10 +95,11 @@ module.exports = class Dispage {
     /** @deprecated Use .setUser() instead. */
     setUserID(user) {
         console.warn('.setUserID() is deprecated. Please use .setUser() instead.')
-        this._userIDs = new Set([this._getId(user)]);
+        this.setUser(user);
         return this;
     }
     /**
+     * Creates a button
      * @param {object} o
      * @returns {this}
      */
@@ -98,15 +108,17 @@ module.exports = class Dispage {
         return this;
     }
     /**
+     * Removes a specific button with it's id
      * @param {string} customId
      * @returns {this}
      */
     removeButton(customId) {
-        const i = this.buttons.findIndex(btn => btn.customId === customId);
+        const i = this.buttons.findIndex(btn => btn?.customId === customId);
         if (i !== -1) this.buttons.splice(i, 1)
         return this;
     }
     /**
+     * Edit an existing button with it's id
      * @param {string} customId
      * @param {object} o
      * @returns {this}
@@ -118,6 +130,7 @@ module.exports = class Dispage {
         return this;
     }
     /**
+     * Gets the current button component row
      * @param {boolean} disabled 
      * @returns {Discord.MessageActionRow | null}
      */
@@ -125,10 +138,11 @@ module.exports = class Dispage {
         let ar = new Discord.MessageActionRow()
         let previous = this.embeds[this.index - 1];
         let next = this.embeds[this.index + 1];
-        function format(a) {
+        let format = a => {
             let d = disabled
                 || (a.customId == "previous" && !previous)
                 || (a.customId == "next" && !next)
+                || this.ended
                 || false;
 
             let button = new Discord.MessageButton()
@@ -139,25 +153,19 @@ module.exports = class Dispage {
             return ar.addComponents(button);
         }
         this.buttons.forEach(format);
-        if (!this.showDisabledButtons) ar.components = ar.components.filter(c => !c.disabled);
+        if (!this._sdb) ar.components = ar.components.filter(c => !c.disabled);
         return ar.components.length ? [ar] : null;
     }
-
     /**
-     * @param {Function} func 
-     * @returns {this}
-     * @example
-     * .setFooter((index, total) => total - 1 ? `📜 Page ${index}/${total}` : '');
-     * // If it's the first page, will be empty. Othewise, ^^^^ will display this text
-     */
-    setFooter(func) {
-        this.footer = func ?? (() => '');
-        return this;
-    }
-
-    /**
+     * Sets the embed array.
      * @param {Discord.MessageEmbed[]} embeds 
      * @returns {this}
+     * @example
+     * .setEmbeds([
+     *     new MessageEmbed().setDescription('embed 1'),
+     *     new MessageEmbed().setDescription('embed 2!'),
+     *     new MessageEmbed().setDescription('embed 3!!')
+     * ])
      */
     setEmbeds(embeds) {
         embeds = this._fixEmbeds(embeds);
@@ -165,16 +173,27 @@ module.exports = class Dispage {
         return this;
     }
     /**
+     * Add an embed to the array of embed
      * @param {Discord.MessageEmbed} embed
      * @returns {this}
+     * @example
+     * .addEmbed(new MessageEmbed().setDescription('embed 4??'))
      */
     addEmbed(embed) {
-        return this.setEmbeds([...this.embeds, embed]);
+        let embeds = this._fixEmbeds(embed)
+        return this.setEmbeds([...this.embeds, ...embeds]);
     }
 
     /**
+     * Add multiple arrays to the array of embeds
      * @param {Discord.MessageEmbed[]} embeds
      * @returns {this}
+     * @example
+     * .addEmbeds([
+     *   new MessageEmbed().setDescription('embed 5!!'),
+     *   new MessageEmbed().setDescription('embed 6!!'),
+     *   new MessageEmbed().setDescription('embed 7!!'),
+     * ])
      */
     addEmbeds(embeds) {
         embeds = this._fixEmbeds(embeds);
@@ -183,17 +202,19 @@ module.exports = class Dispage {
     }
 
     /**
+     * Returns an array of embeds whether the parameter is ONE embed, an array of embeds or an array of arrays
      * @param {Discord.MessageEmbed | Discord.MessageEmbed[] | Discord.MessageEmbed[][]} embeds 
      * @returns {Discord.MessageEmbed[]}
      */
     _fixEmbeds(embeds) {
-        // embed
-        embeds = Array.isArray(embeds[0]) ? embeds[0] : embeds
-        embeds = embeds instanceof Discord.MessageEmbed ? [embeds] : embeds;
+        embeds = Array.isArray(embeds[0]) ? embeds.flat(1) : embeds
+        embeds = embeds?.type === "rich" ? [embeds] : embeds;
+        console.log(embeds);
         return embeds;
     }
 
     /**
+     * Sets the number of milliseconds before the embed page system stops
      * @param {number} duration 
      * @returns {this}
      */
@@ -203,72 +224,88 @@ module.exports = class Dispage {
     }
 
     /**
+     * Adds milliseconds to the current duration of the page system
      * @param {number} duration 
      * @returns {this}
      */
     addDuration(duration) {
-        this.duration += duration
+        this.duration = (this.duration ?? 0) + duration;
         return this;
     }
 
+    /**
+     * Get to the next page
+     */
     next() {
-        if (this.canEdit()) return this.setIndex(this.index + 1)
-        else return Promise.resolve();
-
+        let newIndex = this.index + 1
+        if (this.canEdit() && this.doesIndexExist(newIndex))
+            return this.changeToPage(newIndex)
+        return Promise.resolve(false);
     }
 
+    /**
+     * Get to the previous page
+     * @returns {Promise}
+     */
     previous() {
-        if (this.canEdit()) return this.setIndex(this.index - 1)
-        else return Promise.resolve();
+        let newIndex = this.index - 1
+        if (this.canEdit() && this.doesIndexExist(newIndex))
+            return this.changeToPage(newIndex)
+        return Promise.resolve(false);
     }
-
+    /**
+     * Checks if the index exists on the embed array
+     * @param {number} index 
+     * @returns {boolean}
+     */
+    doesIndexExist(index) {
+        return Boolean(this.embeds[index]);
+    }
+    /**
+     * Change pages
+     * @param {number} index 
+     */
+    changeToPage(index){
+        this.setIndex(index)
+        return this.update();
+    }
     /**
      * @param {number} index 
      * @returns {this}
      */
     setIndex(index) {
         this.index = index;
-        if (this.canEdit()) this.update()
         return this;
-    }
-
-    _fixEmbedFooters() {
-        return this.embeds.forEach(embed => {
-            embed.setFooter({ text: this.footer(this.index + 1, this.embeds.length) })
-        });
     }
     /**
      * @param {Discord.MessageEditOptions} opts 
      */
-    edit(opts) {
-        if (this.deleted) return Promise.reject('No message to edit.')
-        this._fixEmbedFooters();
-        return this.reply.edit(opts)
+    async edit(opts) {
+        if (!this.canEdit()) return await Promise.reject("Cannot edit message");
+        return await this.reply.edit(opts)
     }
 
-    disableButtons() {
-        return this.edit({ components: this.getRows(true) })
-    }
-
-    end() {
-        if (this.ended) return Promise.resolve();
+    async end(reason) {
+        if (!this.canEdit()) return Promise.resolve();
+        await this.edit({
+            components: this.getRows(true)
+        })
         this.ended = true;
-        return this.disableButtons()
+        if (reason === "button") await this.reply.suppressEmbeds();
     }
 
-    delete() {
+    async delete() {
         this.deleted = true;
         this.ended = true;
-        if (this.reply) return this.reply.delete();
-        else return Promise.reject('No message to edit.');
+        if (this.reply) return await this.reply.delete();
+        else return await Promise.reject('No message to edit.');
     }
 
-    update() {
-        return this.edit(this.getOpts())
+    async update() {
+        return await this.edit(this.getOpts())
     }
 
     getOpts(disabled = false) {
-        this._fixEmbedFooters();
         return {
             embeds: [this.currentEmbed],
             components: this.getRows(disabled)
@@ -287,11 +324,22 @@ module.exports = class Dispage {
         return ['DEFAULT', 'REPLY', 'APPLICATION_COMMAND', 'CONTEXT_MENU_COMMAND']
             .includes(ctx?.type);
     }
+    /**
+     * Creates a collector of buttons of the message with the duration
+     * @param {Discord.Message} reply 
+     * @returns {Discord.InteractionCollector}
+     */
+    _createCollector(reply) {
+        return reply.createMessageComponentCollector({
+            componentType: 'BUTTON',
+            time: this.duration,
+        });
+    }
     checkForErrors(msg) {
         let errors = []
         function add(error) { errors.push(error) };
-        if (this.ended) add('Page system has ended already.')
-        if (this.deleted) add('Page system has previously been deleted.')
+        if (this.ended) add('Dispage has ended already.')
+        if (this.deleted) add('Dispage has previously been deleted.')
         if (!msg) add('No message/interaction given.');
         if (msg.author) {
             this.message = msg;
@@ -302,39 +350,32 @@ module.exports = class Dispage {
         } else add(`.start(<ctx>) -> ctx is neiher an interaction nor a message.`);
 
         if (!this.embeds.length) add('Embed array is empty.')
+        else if (!this.embeds[this.index]) add(`No embed at index ${this.index}`);
 
         if (typeof (this.index) !== "number"
             || isNaN(this.index)
             || this.index < 0) add(`Invalid index ${this.index}`);
 
-        if (!this.embeds[this.index]) add(`No embed at index ${this.index}`);
-
-        if (typeof (this.footer) !== "function")
-            add(`.footer is not a function but is a ${typeof (this.footer)}.`)
-
         if (typeof (this.filter) !== "function")
             add(`.filter should be a function but is a ${typeof (this.filter)}.`)
-        if (typeof (this.showDisabledButtons) !== "boolean")
-            add(`.showDisabledButtons should be a boolean but is a ${typeof (this.showDisabledButtons)}`)
+        if (typeof (this._sdb) !== "boolean")
+            add(`.showDisabledButtons() should be a boolean but is a ${typeof (this._sdb)}`)
         if (typeof (this.duration) !== "number")
             add(`.duration should be a number but is a ${typeof this.duration}`)
         this.users.forEach((id, i) => {
-            if (typeof (id) !== "string") add(`ID "${id}" at index ${i} is not a string but a ${typeof(id)}.`)
+            if (typeof (id) !== "string") add(`ID "${id}" at index ${i} is not a string but a ${typeof (id)}.`)
             else if (id.split(' ').some(c => !Number(c))) add(`ID "${id}" at index ${i} is not a valid user ID.`);
         })
         return errors;
     }
-
     async start(ctx) {
+        if (this.started) throw new Error('Dispage already started')
         if (!this.users.length) this._userIDs.add(ctx.author?.id || ctx.user?.id);
-        let errors = this.checkForErrors(ctx)
-        if (errors.length)
-            throw new Error("Errors ecountered :\n" + errors.map((e, i) => `${i + 1} - ${e}`).join('\n'))
+        let errs = this.checkForErrors(ctx)
+        if (errs.length) throw new Error(`Errors ecountered :\n`
+            + errs.map((e, i) => `${i} - ${e}`).join('\n'))
 
-        this._fixEmbedFooters();
-        /**
-         * @type {Discord.Message} 
-         */
+        /** @type {Discord.Message} */
         this.reply = await this[this.type].reply({
             fetchReply: true,
             ...this.getOpts()
@@ -346,16 +387,13 @@ module.exports = class Dispage {
         if (!this.reply) throw new Error('Could not fetch reply of the message/interaction');
         if (!this.getRows()) return;
 
-        this.collector = this.reply.createMessageComponentCollector({
-            componentType: 'BUTTON',
-            time: this.duration,
-        });
+        this.collector = this._createCollector(this.reply)
 
         this.collector.on('collect', async (int) => {
             if (this.users.includes(int.user.id)) {
                 if (!this.filter(int)) return;
                 const id = int.customId;
-                if (id === "stop") await this.end();
+                if (id === "stop") this.collector.stop('button');
                 else {
                     switch (id) {
                         case 'next':
@@ -365,13 +403,13 @@ module.exports = class Dispage {
                             await this.previous();
                             break;
                     }
-                    if (!this.ended) await this.update();
                 }
+                if (this.canEdit()) await this.update();
             }
             await int.deferUpdate().catch(() => 0);
-        });
+        })
 
-        this.collector.on('end', () => { this.end() });
+        this.collector.on('end', async (_, reason) => await this.end(reason));
         return this;
     }
 }
