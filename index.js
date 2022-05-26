@@ -1,10 +1,22 @@
-const Discord = require('discord.js');
+const {
+    Client,
+    Message,
+    MessageEmbed,
+    MessageActionRow,
+    MessageButton,
+    MessageEditOptions,
+    MessageOptions,
+    Interaction,
+    InteractionCollector,
+    Constants
+} = require('js');
+
 module.exports = class Dispage {
-    /** @param {Discord.Client} client  */
+    /** @param {Client} client  */
     constructor(client) {
         this.client = client;
         this.index = 0;
-        /** @type {Discord.MessageEmbed[]} */
+        /** @type {MessageEmbed[]} */
         this.embeds = [];
         this.message = null;
         this.interaction = null;
@@ -29,6 +41,7 @@ module.exports = class Dispage {
         });
         this.filter = (int) => this.users.includes(int.user.id);
         this._sdb = true;
+        /** @type {Set<string>} */
         this._userIDs = new Set();
     }
     get users() {
@@ -43,29 +56,34 @@ module.exports = class Dispage {
     get endUntill() {
         return this.collector ? (Date.now() - this.collector.options.time) : null;
     }
-    /** @returns {Discord.MessageEmbed} */
+    /** @returns {MessageEmbed} */
     get currentEmbed() {
         return this.embeds[this.index];
     }
     _getId(user) {
         return this.client?.users.resolve(user)?.id || user;
     }
+    /**
+     * Sets the main style for buttons who don't have a per-defined style.
+     * @param {MessageButtonStyle} style 
+     * @returns {this}
+     */
     setMainStyle(style) {
         this.mainStyle = style;
         return this;
     }
     /**
-     * If 
+     * If buttons that aren't available should be shown.
      * @param {boolean} should 
      * @returns {this}
      */
-    showDisabledButtons(should) {
-        this._sdb = should ?? true;
+    showDisabledButtons(should = true) {
+        this._sdb = should;
         return this;
     }
     /**
      * Rmoves a user from the list of users allowed to interact with the buttons
-     * @param {Discord.UserResolvable} user 
+     * @param {UserResolvable} user 
      * @returns {this}
      */
     removeUser(user) {
@@ -74,7 +92,7 @@ module.exports = class Dispage {
     }
     /**
      * Adds a user to the list of users allowed to interact with the buttons
-     * @param {Discord.UserResolvable} user 
+     * @param {UserResolvable} user 
      * @returns {this}
      */
     addUser(user) {
@@ -84,7 +102,7 @@ module.exports = class Dispage {
     /**
      * Sets the user being the only one allowed to interact with the buttons
      * @tip To have multiple users beeing able to interact with the buttons, use .addUser()
-     * @param {Discord.UserResolvable} user 
+     * @param {UserResolvable} user 
      * @returns {this}
      */
     setUser(user) {
@@ -145,10 +163,10 @@ module.exports = class Dispage {
     /**
      * Gets the current button component row
      * @param {boolean} disabled 
-     * @returns {Discord.MessageActionRow | null}
+     * @returns {MessageActionRow | null}
      */
     getRows(disabled = false) {
-        let ar = new Discord.MessageActionRow()
+        let ar = new MessageActionRow()
         let previous = this.embeds[this.index - 1];
         let next = this.embeds[this.index + 1];
         let format = a => {
@@ -158,7 +176,7 @@ module.exports = class Dispage {
                 || this.ended
                 || false;
 
-            let button = new Discord.MessageButton()
+            let button = new MessageButton()
                 .setDisabled(d)
                 .setStyle(a.style || this.mainStyle)
             if (a.customId) button.setCustomId(a.customId)
@@ -173,7 +191,7 @@ module.exports = class Dispage {
     }
     /**
      * Sets the embed array.
-     * @param {Discord.MessageEmbed[]} embeds 
+     * @param {MessageEmbed[]} embeds 
      * @returns {this}
      * @example
      * .setEmbeds([
@@ -187,9 +205,10 @@ module.exports = class Dispage {
         this.embeds = embeds;
         return this;
     }
+
     /**
      * Add an embed to the array of embed
-     * @param {Discord.MessageEmbed} embed
+     * @param {MessageEmbed} embed
      * @returns {this}
      * @example
      * .addEmbed(new MessageEmbed().setDescription('embed 4??'))
@@ -201,7 +220,7 @@ module.exports = class Dispage {
 
     /**
      * Add multiple arrays to the array of embeds
-     * @param {Discord.MessageEmbed[]} embeds
+     * @param {MessageEmbed[]} embeds
      * @returns {this}
      * @example
      * .addEmbeds([
@@ -218,8 +237,8 @@ module.exports = class Dispage {
 
     /**
      * Returns an array of embeds whether the parameter is ONE embed, an array of embeds or an array of arrays
-     * @param {Discord.MessageEmbed | Discord.MessageEmbed[] | Discord.MessageEmbed[][]} embeds 
-     * @returns {Discord.MessageEmbed[]}
+     * @param {MessageEmbed | MessageEmbed[] | MessageEmbed[][]} embeds 
+     * @returns {MessageEmbed[]}
      */
     _fixEmbeds(embeds) {
         embeds = Array.isArray(embeds[0]) ? embeds.flat(1) : embeds
@@ -249,7 +268,7 @@ module.exports = class Dispage {
 
     /**
      * Go to the next page
-     * @returns {Promise<Discord.Message | false>}
+     * @returns {Promise<Message | false>}
      */
     next() {
         let newIndex = this.index + 1
@@ -260,7 +279,7 @@ module.exports = class Dispage {
 
     /**
      * Get to the previous page
-     * @returns {Promise<Discord.Message | false>}
+     * @returns {Promise<Message | false>}
      */
     previous() {
         let newIndex = this.index - 1
@@ -279,7 +298,7 @@ module.exports = class Dispage {
     /**
      * Change pages
      * @param {number} index
-     * @returns {Promise<Discord.Message>} 
+     * @returns {Promise<Message>} 
      */
     changeToPage(index) {
         this.setIndex(index)
@@ -294,8 +313,8 @@ module.exports = class Dispage {
         return this;
     }
     /**
-     * @param {Discord.MessageEditOptions} opts 
-     * @returns {Promise<Discord.Message>}
+     * @param {MessageEditOptions} opts 
+     * @returns {Promise<Message>}
      */
     async edit(opts) {
         if (!this.canEdit()) return await Promise.reject("Cannot edit message");
@@ -305,7 +324,7 @@ module.exports = class Dispage {
     /**
      * End the embed page system
      * @param {"button" | "time"} reason 
-     * @returns {Promise<void | Discord.Message>}
+     * @returns {Promise<void | Message>}
      */
     async end(reason) {
         console.log(reason);
@@ -319,7 +338,7 @@ module.exports = class Dispage {
 
     /**
      * Delete the embed page system message
-     * @returns {Promise<Discord.Message>}
+     * @returns {Promise<Message>}
      */
     async delete() {
         this.deleted = true;
@@ -330,14 +349,14 @@ module.exports = class Dispage {
 
     /**
      * Edit the embed page system.
-     * @returns {Promise<Discord.Message>}
+     * @returns {Promise<Message>}
      */
     async update() {
         return await this.edit(this.getOpts())
     }
     /**
      * @param {boolean} disabled 
-     * @returns {Discord.MessageOptions}
+     * @returns {MessageOptions}
      */
     getOpts(disabled = false) {
         return {
@@ -356,7 +375,7 @@ module.exports = class Dispage {
     }
     /**
      * Check if the argument can be used in the .start() method
-     * @param {Discord.Message | Discord.Interaction} ctx 
+     * @param {Message | Interaction} ctx 
      * @returns {boolean}
      */
     isValidCtx(ctx) {
@@ -365,8 +384,8 @@ module.exports = class Dispage {
     }
     /**
      * Creates a collector of buttons of the message with the duration
-     * @param {Discord.Message} reply 
-     * @returns {Discord.InteractionCollector}
+     * @param {Message} reply 
+     * @returns {InteractionCollector}
      */
     _createCollector(reply) {
         return reply.createMessageComponentCollector({
@@ -376,7 +395,7 @@ module.exports = class Dispage {
     }
     /**
      * Check if any problems are existing in the current 
-     * @param {Discord.Message | Discord.Interaction} msg 
+     * @param {Message | Interaction} msg 
      * @returns {string[]}
      */
     checkForErrors(ctx) {
@@ -408,7 +427,7 @@ module.exports = class Dispage {
         if (typeof (this.duration) !== "number")
             add(`.duration should be a number but is a ${typeof this.duration}`)
 
-        if (!Object.keys(Discord.Constants.MessageButtonStyles).includes(this.mainStyle)) add(`.mainStyle is not a correct button style. (${this.mainStyle})`)
+        if (!Object.keys(Constants.MessageButtonStyles).includes(this.mainStyle)) add(`.mainStyle is not a correct button style. (${this.mainStyle})`)
 
         if (!Array.isArray(this.buttons)) add('.buttons is not an array as expected.')
 
@@ -430,7 +449,7 @@ module.exports = class Dispage {
         if (this.started) throw new Error('Dispage already started')
         if (!this.users.length) this._userIDs.add(ctx.author?.id || ctx.user?.id);
 
-        /** @type {Discord.Message} */
+        /** @type {Message} */
         this.reply = await this[this.type].reply({
             fetchReply: true,
             ...this.getOpts()
