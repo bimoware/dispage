@@ -13,6 +13,13 @@ import {
     ButtonInteraction,
     MessageButtonOptions
 } from 'discord.js'
+
+// Types
+type ButtonId = "previous" | "stop" | "next" | string
+type Embed = MessageEmbed
+type User = UserResolvable
+type Context = Message | Interaction
+
 declare class Dispage {
     constructor(client: Client);
     client: Client;
@@ -72,9 +79,3 @@ declare class Dispage {
     checkForErrors(ctx: Context): string[];
     start(ctx: Context): Promise<this>;
 }
-
-// Types
-type ButtonId = "previous" | "stop" | "next" | string
-type Embed = MessageEmbed
-type User = UserResolvable
-type Context = Message | Interaction
