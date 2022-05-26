@@ -29,8 +29,6 @@ declare class Dispage {
     removeUser(user: User): this;
     addUser(user: User): this;
     setUser(user: User): this;
-    /** @deprecated Use .setUser() instead. */
-    setUserID(user: any): this;
     addButton(o: Discord.MessageButtonOptions): this;
     removeButton(customId: ButtonId): this;
     editButton(customId: ButtonId, o: Discord.MessageButtonOptions): this;

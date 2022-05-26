@@ -23,7 +23,7 @@ module.exports = class Dispage {
             return {
                 customId: arr[0],
                 emoji: arr[1],
-                style: arr[2] || this.mainStyle,
+                style: arr[2],
                 label: arr[3]
             }
         });
@@ -51,7 +51,7 @@ module.exports = class Dispage {
         return this.client?.users.resolve(user)?.id || user;
     }
     setMainStyle(style) {
-        this.mainStyle = style ?? mainStyle;
+        this.mainStyle = style;
         return this;
     }
     /**
@@ -91,13 +91,6 @@ module.exports = class Dispage {
         this._userIDs = new Set([this._getId(user)]);
         return this;
     }
-
-    /** @deprecated Use .setUser() instead. */
-    setUserID(user) {
-        console.warn('.setUserID() is deprecated. Please use .setUser() instead.')
-        this.setUser(user);
-        return this;
-    }
     /**
      * Creates a button
      * @param {object} o
@@ -105,6 +98,24 @@ module.exports = class Dispage {
      */
     addButton(o) {
         this.buttons.push(o);
+        return this;
+    }
+    /**
+     * Removes every existing button
+     * @returns {this}
+     */
+    removeAllButtons() {
+        this.buttons = [];
+        return this;
+    }
+    /**
+     * Find a button with a function to remove it.
+     * @param {Function} query 
+     * @returns {this}
+     */
+    findButtonAndRemove(query) {
+        const i = this.buttons.findIndex(query);
+        if (i !== -1) this.buttons.splice(i, 1)
         return this;
     }
     /**
@@ -126,7 +137,9 @@ module.exports = class Dispage {
     editButton(customId, o) {
         const i = this.buttons.findIndex(btn => btn.customId === customId);
         if (i < 0) this.addButton(o)
-        else this.buttons[i] = { ...this.buttons[i], ...o };
+        else {
+            this.buttons[i] = { ...this.buttons[i], ...o };
+        }
         return this;
     }
     /**
@@ -146,10 +159,12 @@ module.exports = class Dispage {
                 || false;
 
             let button = new Discord.MessageButton()
-                .setCustomId(a.customId)
-                .setEmoji(a.emoji)
-                .setStyle(a.style)
-                .setDisabled(d);
+                .setDisabled(d)
+                .setStyle(a.style || this.mainStyle)
+            if (a.customId) button.setCustomId(a.customId)
+            if (a.emoji) button.setEmoji(a.emoji)
+            if (a.label) button.setLabel(a.label)
+            if (a.url) button.setURL(a.url)
             return ar.addComponents(button);
         }
         this.buttons.forEach(format);
@@ -233,7 +248,8 @@ module.exports = class Dispage {
     }
 
     /**
-     * Get to the next page
+     * Go to the next page
+     * @returns {Promise<Discord.Message | false>}
      */
     next() {
         let newIndex = this.index + 1
@@ -244,7 +260,7 @@ module.exports = class Dispage {
 
     /**
      * Get to the previous page
-     * @returns {Promise}
+     * @returns {Promise<Discord.Message | false>}
      */
     previous() {
         let newIndex = this.index - 1
@@ -262,9 +278,10 @@ module.exports = class Dispage {
     }
     /**
      * Change pages
-     * @param {number} index 
+     * @param {number} index
+     * @returns {Promise<Discord.Message>} 
      */
-    changeToPage(index){
+    changeToPage(index) {
         this.setIndex(index)
         return this.update();
     }
@@ -278,13 +295,20 @@ module.exports = class Dispage {
     }
     /**
      * @param {Discord.MessageEditOptions} opts 
+     * @returns {Promise<Discord.Message>}
      */
     async edit(opts) {
         if (!this.canEdit()) return await Promise.reject("Cannot edit message");
         return await this.reply.edit(opts)
     }
 
+    /**
+     * End the embed page system
+     * @param {"button" | "time"} reason 
+     * @returns {Promise<void | Discord.Message>}
+     */
     async end(reason) {
+        console.log(reason);
         if (!this.canEdit()) return Promise.resolve();
         await this.edit({
             components: this.getRows(true)
@@ -293,6 +317,10 @@ module.exports = class Dispage {
         if (reason === "button") await this.reply.suppressEmbeds();
     }
 
+    /**
+     * Delete the embed page system message
+     * @returns {Promise<Discord.Message>}
+     */
     async delete() {
         this.deleted = true;
         this.ended = true;
@@ -300,10 +328,17 @@ module.exports = class Dispage {
         else return await Promise.reject('No message to edit.');
     }
 
+    /**
+     * Edit the embed page system.
+     * @returns {Promise<Discord.Message>}
+     */
     async update() {
         return await this.edit(this.getOpts())
     }
-
+    /**
+     * @param {boolean} disabled 
+     * @returns {Discord.MessageOptions}
+     */
     getOpts(disabled = false) {
         return {
             embeds: [this.currentEmbed],
@@ -319,6 +354,11 @@ module.exports = class Dispage {
     canEdit() {
         return this.ctx && this.started && !this.ended && !this.deleted;
     }
+    /**
+     * Check if the argument can be used in the .start() method
+     * @param {Discord.Message | Discord.Interaction} ctx 
+     * @returns {boolean}
+     */
     isValidCtx(ctx) {
         return ['DEFAULT', 'REPLY', 'APPLICATION_COMMAND', 'CONTEXT_MENU_COMMAND']
             .includes(ctx?.type);
@@ -334,20 +374,26 @@ module.exports = class Dispage {
             time: this.duration,
         });
     }
-    checkForErrors(msg) {
+    /**
+     * Check if any problems are existing in the current 
+     * @param {Discord.Message | Discord.Interaction} msg 
+     * @returns {string[]}
+     */
+    checkForErrors(ctx) {
         let errors = []
         function add(error) { errors.push(error) };
         if (this.ended) add('Dispage has ended already.')
         if (this.deleted) add('Dispage has previously been deleted.')
-        if (!msg) add('No message/interaction given.');
-        if (msg.author) {
-            this.message = msg;
-            this.addUser(msg.author.id)
-        } else if (msg.user) {
-            this.interaction = msg;
-            this.addUser(msg.user.id)
-        } else add(`.start(<ctx>) -> ctx is neiher an interaction nor a message.`);
-
+        if (!ctx) add('No message/interaction given.');
+        else {
+            if (ctx.author) {
+                this.message = ctx;
+                this.addUser(ctx.author.id)
+            } else if (ctx.user) {
+                this.interaction = ctx;
+                this.addUser(ctx.user.id)
+            } else add(`.start(<ctx>) -> ctx is neiher an interaction nor a message.`);
+        }
         if (!this.embeds.length) add('Embed array is empty.')
         else if (!this.embeds[this.index]) add(`No embed at index ${this.index}`);
 
@@ -361,18 +407,28 @@ module.exports = class Dispage {
             add(`.showDisabledButtons() should be a boolean but is a ${typeof (this._sdb)}`)
         if (typeof (this.duration) !== "number")
             add(`.duration should be a number but is a ${typeof this.duration}`)
+
+        if (!Object.keys(Discord.Constants.MessageButtonStyles).includes(this.mainStyle)) add(`.mainStyle is not a correct button style. (${this.mainStyle})`)
+
+        if (!Array.isArray(this.buttons)) add('.buttons is not an array as expected.')
+
         this.users.forEach((id, i) => {
             if (typeof (id) !== "string") add(`ID "${id}" at index ${i} is not a string but a ${typeof (id)}.`)
             else if (id.split(' ').some(c => !Number(c))) add(`ID "${id}" at index ${i} is not a valid user ID.`);
         })
         return errors;
     }
+    /**
+     * Execute the embed page system 
+     * @param {Message | Interaction} ctx 
+     * @returns {Promise<this>}
+     */
     async start(ctx) {
+        let errs = this.checkForErrors(ctx)
+        const err = new Error(`Errors ecountered :\n${errs.map((e, i) => `${i} - ${e}`).join('\n')}`);
+        if (errs.length) throw err;
         if (this.started) throw new Error('Dispage already started')
         if (!this.users.length) this._userIDs.add(ctx.author?.id || ctx.user?.id);
-        let errs = this.checkForErrors(ctx)
-        if (errs.length) throw new Error(`Errors ecountered :\n`
-            + errs.map((e, i) => `${i} - ${e}`).join('\n'))
 
         /** @type {Discord.Message} */
         this.reply = await this[this.type].reply({

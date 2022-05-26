@@ -20,11 +20,9 @@
     "button",
     "pagination",
     "pages",
-    "page",
-    "bot",
-    "client"
+    "page"
   ],
-  "author": "Vox#6198",
+  "author": "Vox",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/voxlinou1/dispage/issues"
