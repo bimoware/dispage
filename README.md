@@ -115,7 +115,7 @@ client.login('TOKEN_HERE')
 ## Methods
 > On the `Return` column, `this` means that the methode returns the original instance of the class. Like discord.js's MessageEmbed where we can call multiple times multiple methods following themselves. Like this: `new Dispage().setMainStyle('SECONDARY').setIndex(2)` etc..
 
-**[PS]: ⚠ MEANS __[DEPRECATED]__ (Meaning you shouldn't use it anymore)**
+**__*PS*__: ⚠ MEANS __[DEPRECATED]__ (Meaning you shouldn't use it anymore)**
 
 |       **Name**        |         **Arguments**          |         **Return**         |
 | :-------------------: | :----------------------------: | :------------------------: |

@@ -12,7 +12,7 @@ import {
     Interaction,
     ButtonInteraction,
     MessageButtonOptions
-} from 'discord.js'
+} from 'discord.js';
 
 // Types
 type ButtonId = "previous" | "stop" | "next" | string
@@ -43,7 +43,7 @@ declare class Dispage {
     get type(): string;
     get endUntill(): number;
     get currentEmbed(): Embed;
-    _getId(user: User): any;
+    _getId(user: User): string;
     setMainStyle(style: MessageButtonStyle): this;
     showDisabledButtons(should?: boolean): this;
     removeUser(user: User): this;

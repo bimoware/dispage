@@ -9,7 +9,7 @@ const {
     Interaction,
     InteractionCollector,
     Constants
-} = require('js');
+} = require('discord.js');
 
 module.exports = class Dispage {
     /** @param {Client} client  */
@@ -331,9 +331,9 @@ module.exports = class Dispage {
         if (!this.canEdit()) return Promise.resolve();
         await this.edit({
             components: this.getRows(true)
-        })
+        }).catch(() => 0)
         this.ended = true;
-        if (reason === "button") await this.reply.suppressEmbeds();
+        if (reason === "button") await this.reply.suppressEmbeds().catch(() => 0)
     }
 
     /**

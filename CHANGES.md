@@ -36,3 +36,5 @@
 - .canEdit that returns true if dispage has neither stopped, been deleted, the time has run out and the page system has been sent and successfully started
 - .editButton, .createButton and .removeButton to manipulate buttons on screen and create existing imaginations
 - Better JSDoc for none-typescript cases.
+# 1.0.5
+- Fixed a small bug that crashed when the embed page system gets deleted.
