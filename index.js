@@ -327,7 +327,6 @@ module.exports = class Dispage {
      * @returns {Promise<void | Message>}
      */
     async end(reason) {
-        console.log(reason);
         if (!this.canEdit()) return Promise.resolve();
         await this.edit({
             components: this.getRows(true)
