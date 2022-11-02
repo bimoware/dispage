@@ -1,8 +1,5 @@
 <div align="center"><h1>Dispage</h1></div>
 
-> ## ⚠ Warning! ⚠ 
-> This is a really new package so even if it's been tested a lot and the sample code provided here works perfecty, there could still be some bugs or issues you can report <a href="https://github.com/voxlinou1/dispage/issues">here</a> !
-
 ## About
 
 dispage is a powerful [Node.js](https://nodejs.org) module that allows you to easily create button to switch over embed pages on a discord message.
@@ -11,10 +8,10 @@ dispage is a powerful [Node.js](https://nodejs.org) module that allows you to ea
 
 ## Dependencies
 
-**Needs discord.js v13 or higher.**
+**Needs discord.js v14.6.0 or higher.**
 If discord.js isn't installed yet :
 ```sh-session
-npm install discord.js
+npm install discord.js@latest
 ```
 
 ## Installation
@@ -25,69 +22,54 @@ npm i dispage
 ## Importing
 ### Javascript
 ```js
-// Create a command to start the page system
 const Dispage = require('dispage')
-const { Client, Intents, MessageEmbed } = require('discord.js')
 ```
 ### Typescript
 ```ts
-import PageSystem from 'dispage';
-import Discord from 'discord.js';
+import Dispage from 'dispage';
 ```
 ### Simple example
 ```js
-const client = new Client({ intents: Object.keys(Intents.FLAGS) })
-
-client.on('messageCreate', message => {
-    if (message.content === "!test") {
-
-        const embeds = [
-            new MessageEmbed().setDescription('Embed #1'),
-            new MessageEmbed().setDescription('Embed #2')
-        ];
-        
-        return new Dispage()
-            .setEmbeds(embeds)
-            .start(message)
-    }
-});
-
-client.login('TOKEN_HERE')
+const embeds = [
+    new MessageEmbed().setDescription('Embed #1'),
+    new MessageEmbed().setDescription('Embed #2')
+];
+return new Dispage()
+    .setEmbeds(embeds)
+    .start(message)
 ```
 ![Simple example](https://iili.io/Xf3MhP.png)
 
 ### If you want to push things further...
 ```js
-        const embeds = [
-            'embed 1',
-            'embed 2 !!',
-            'embed 3 !?!',
-            'embed 4 !!!!!!!!?'
-        ].map((desc, i) => new Discord.MessageEmbed()
-            .setTitle(`📃 Page #${i + 1}`)
-            .setColor('BLURPLE')
-            .setDescription(desc)) // Automatically creating for us embeds
+const embeds = [
+    'embed 1',
+    'embed 2 !!',
+    'embed 3 !?!',
+    'embed 4 !!!!!!!!?'
+].map((desc, i) => new Discord.EmbedBuilder()
+    .setTitle(`📃 Page #${i + 1}`)
+    .setColor('BLURPLE')
+    .setDescription(desc))
 
-        const e = new Dispage(client)   // <- giving client here is completely optional but will help the embed page system fix some bugs for you.
-            .setEmbeds(embeds)
-            // This style will be given to every button that doesn't have a specific style
-            .setMainStyle('SECONDARY')
-            .editButton('previous', { emoji: "824240081409540157", label: "Previous" })
-            // Setting a property (here, style) to null will remove it. 👇
-            .editButton('stop', { emoji: "961338862259544114" })
-            .editButton('next', { emoji: "824240024509874186", label: "Next" })
-            // We can edit as many buttons as we want and as many times as we wish
-            .editButton('stop', { style : "SUCCESS" })
-            // You can create your own custom button
-            .addButton({
-                label: "Go to Message",
-                style: "LINK",
-                url: "https://discord.com/channels/937626764916719626/937633296878293002/978956060972974101"
-            })
-            // Will not show buttons that are disabled
-            .showDisabledButtons(false)
-            // Finally after having setup everything. We can start
-            .start(message)
+new Dispage()
+    .setEmbeds(embeds)
+    // This style will be given to every button that doesn't have a specific style
+    .setMainStyle('Secondary')
+    .editButton('previous', { emoji: "824240081409540157", label: "Previous" })
+    // Setting a property (here, style) to null will remove it. 👇
+    .editButton('stop', { emoji: "961338862259544114", label: null })
+    .editButton('next', { emoji: "824240024509874186", label: "Next" })
+    // We can edit as many buttons as we want and as many times as we wish
+    .editButton('stop', { style : "Success" })
+    // You can create your own custom button
+    .addButton({
+        label: "Go to Message",
+        style: "Link",
+        url: "https://discord.com/channels/937626764916719626/937633296878293002/978956060972974101"
+    })
+    // Finally after having setup everything. We can start
+    .start(message)
 ```
 
 ![Page 1](https://iili.io/XnAgvR.png)
