@@ -38,3 +38,9 @@
 - Better JSDoc for none-typescript cases.
 # 1.0.5
 - Fixed a small bug that crashed when the embed page system gets deleted.
+# 1.0.6
+- Made it compatible for v14
+- Fixed bug that made the buttons still enabled after dispage turning off
+- Fixed bug that crashed the process when the message is deleted while the buttons are still active
+- Fixed example.js including intents, builders and button style
+- Fixed buttons that still appear even if .showDisabledButtons is disabled

@@ -1,32 +1,37 @@
 const {
     Client,
     Message,
-    MessageEmbed,
-    MessageActionRow,
-    MessageButton,
+    EmbedBuilder,
+    ActionRowBuilder,
+    ButtonBuilder,
     MessageEditOptions,
     MessageOptions,
     Interaction,
     InteractionCollector,
-    Constants
+    ButtonStyle,
+    MessageType,
+    ComponentType
 } = require('discord.js');
 
 module.exports = class Dispage {
     /** @param {Client} client  */
     constructor(client) {
         this.client = client;
+        this.stopReason = null;
         this.index = 0;
-        /** @type {MessageEmbed[]} */
+        /** @type {EmbedBuilder[]} */
         this.embeds = [];
         this.message = null;
         this.interaction = null;
         this.collector = null;
         this.reply = null;
         this.ended = false;
+        this.stopReason = null;
         this.started = false;
         this.deleted = false;
         this.duration = 1000 * 60;
-        this.mainStyle = "PRIMARY";
+        this.mainStyle = "Primary";
+        this.styles = Object.keys(ButtonStyle);
         this.buttons = [
             ['previous', "⬅️"],
             ['stop', "⏹️", "DANGER"],
@@ -40,7 +45,7 @@ module.exports = class Dispage {
             }
         });
         this.filter = (int) => this.users.includes(int.user.id);
-        this._sdb = true;
+        this._hdb = false;
         /** @type {Set<string>} */
         this._userIDs = new Set();
     }
@@ -56,7 +61,7 @@ module.exports = class Dispage {
     get endUntill() {
         return this.collector ? (Date.now() - this.collector.options.time) : null;
     }
-    /** @returns {MessageEmbed} */
+    /** @returns {EmbedBuilder} */
     get currentEmbed() {
         return this.embeds[this.index];
     }
@@ -65,7 +70,7 @@ module.exports = class Dispage {
     }
     /**
      * Sets the main style for buttons who don't have a per-defined style.
-     * @param {MessageButtonStyle} style 
+     * @param {ButtonBuilderStyle} style 
      * @returns {this}
      */
     setMainStyle(style) {
@@ -73,12 +78,12 @@ module.exports = class Dispage {
         return this;
     }
     /**
-     * If buttons that aren't available should be shown.
+     * If buttons that aren't available should be hidden.
      * @param {boolean} should 
      * @returns {this}
      */
-    showDisabledButtons(should = true) {
-        this._sdb = should;
+    hideDisabledButtons(should = false) {
+        this._hdb = should;
         return this;
     }
     /**
@@ -163,10 +168,10 @@ module.exports = class Dispage {
     /**
      * Gets the current button component row
      * @param {boolean} disabled 
-     * @returns {MessageActionRow | null}
+     * @returns {ActionRowBuilder | null}
      */
     getRows(disabled = false) {
-        let ar = new MessageActionRow()
+        let ar = new ActionRowBuilder()
         let previous = this.embeds[this.index - 1];
         let next = this.embeds[this.index + 1];
         let format = a => {
@@ -176,7 +181,9 @@ module.exports = class Dispage {
                 || this.ended
                 || false;
 
-            let button = new MessageButton()
+            if (this._hdb && d) return;
+
+            let button = new ButtonBuilder()
                 .setDisabled(d)
                 .setStyle(a.style || this.mainStyle)
             if (a.customId) button.setCustomId(a.customId)
@@ -185,19 +192,19 @@ module.exports = class Dispage {
             if (a.url) button.setURL(a.url)
             return ar.addComponents(button);
         }
-        this.buttons.forEach(format);
-        if (!this._sdb) ar.components = ar.components.filter(c => !c.disabled);
-        return ar.components.length ? [ar] : null;
+        this.buttons.forEach(format)
+        if (this._hdb) ar.components = ar.components.filter(c =>!c.disabled );
+        return ar.components.length ? [ar] : [];
     }
     /**
      * Sets the embed array.
-     * @param {MessageEmbed[]} embeds 
+     * @param {EmbedBuilder[]} embeds 
      * @returns {this}
      * @example
      * .setEmbeds([
-     *     new MessageEmbed().setDescription('embed 1'),
-     *     new MessageEmbed().setDescription('embed 2!'),
-     *     new MessageEmbed().setDescription('embed 3!!')
+     *     new EmbedBuilder().setDescription('embed 1'),
+     *     new EmbedBuilder().setDescription('embed 2!'),
+     *     new EmbedBuilder().setDescription('embed 3!!')
      * ])
      */
     setEmbeds(embeds) {
@@ -208,10 +215,10 @@ module.exports = class Dispage {
 
     /**
      * Add an embed to the array of embed
-     * @param {MessageEmbed} embed
+     * @param {EmbedBuilder} embed
      * @returns {this}
      * @example
-     * .addEmbed(new MessageEmbed().setDescription('embed 4??'))
+     * .addEmbed(new EmbedBuilder().setDescription('embed 4??'))
      */
     addEmbed(embed) {
         let embeds = this._fixEmbeds(embed)
@@ -220,13 +227,13 @@ module.exports = class Dispage {
 
     /**
      * Add multiple arrays to the array of embeds
-     * @param {MessageEmbed[]} embeds
+     * @param {EmbedBuilder[]} embeds
      * @returns {this}
      * @example
      * .addEmbeds([
-     *   new MessageEmbed().setDescription('embed 5!!'),
-     *   new MessageEmbed().setDescription('embed 6!!'),
-     *   new MessageEmbed().setDescription('embed 7!!'),
+     *   new EmbedBuilder().setDescription('embed 5!!'),
+     *   new EmbedBuilder().setDescription('embed 6!!'),
+     *   new EmbedBuilder().setDescription('embed 7!!'),
      * ])
      */
     addEmbeds(embeds) {
@@ -237,12 +244,12 @@ module.exports = class Dispage {
 
     /**
      * Returns an array of embeds whether the parameter is ONE embed, an array of embeds or an array of arrays
-     * @param {MessageEmbed | MessageEmbed[] | MessageEmbed[][]} embeds 
-     * @returns {MessageEmbed[]}
+     * @param {EmbedBuilder | EmbedBuilder[] | EmbedBuilder[][]} embeds 
+     * @returns {EmbedBuilder[]}
      */
     _fixEmbeds(embeds) {
         embeds = Array.isArray(embeds[0]) ? embeds.flat(1) : embeds
-        embeds = embeds?.type === "rich" ? [embeds] : embeds;
+        embeds = embeds?.type ? [embeds] : embeds;
         return embeds;
     }
 
@@ -270,10 +277,10 @@ module.exports = class Dispage {
      * Go to the next page
      * @returns {Promise<Message | false>}
      */
-    next() {
+    next(int) {
         let newIndex = this.index + 1
         if (this.canEdit() && this.doesIndexExist(newIndex))
-            return this.changeToPage(newIndex)
+            return this.changeToPage(newIndex, int)
         return Promise.resolve(false);
     }
 
@@ -281,10 +288,10 @@ module.exports = class Dispage {
      * Get to the previous page
      * @returns {Promise<Message | false>}
      */
-    previous() {
+    previous(int) {
         let newIndex = this.index - 1
         if (this.canEdit() && this.doesIndexExist(newIndex))
-            return this.changeToPage(newIndex)
+            return this.changeToPage(newIndex, int)
         return Promise.resolve(false);
     }
     /**
@@ -300,9 +307,9 @@ module.exports = class Dispage {
      * @param {number} index
      * @returns {Promise<Message>} 
      */
-    changeToPage(index) {
+    async changeToPage(index, int) {
         this.setIndex(index)
-        return this.update();
+        return await int.update(this.getOpts())
     }
     /**
      * @param {number} index 
@@ -312,27 +319,17 @@ module.exports = class Dispage {
         this.index = index;
         return this;
     }
-    /**
-     * @param {MessageEditOptions} opts 
-     * @returns {Promise<Message>}
-     */
-    async edit(opts) {
-        if (!this.canEdit()) return await Promise.reject("Cannot edit message");
-        return await this.reply.edit(opts)
-    }
 
     /**
      * End the embed page system
-     * @param {"button" | "time"} reason 
+     * @param {string} reason 
      * @returns {Promise<void | Message>}
      */
     async end(reason) {
-        if (!this.canEdit()) return Promise.resolve();
-        await this.edit({
-            components: this.getRows(true)
-        }).catch(() => 0)
+        this.stopReason = reason;
         this.ended = true;
-        if (reason === "button") await this.reply.suppressEmbeds().catch(() => 0)
+        if (!this.canEdit()) return await Promise.resolve();
+        return await this.reply.edit(this.getOpts(true));
     }
 
     /**
@@ -341,18 +338,11 @@ module.exports = class Dispage {
      */
     async delete() {
         this.deleted = true;
-        this.ended = true;
+        this.end("messageDelete")
         if (this.reply) return await this.reply.delete();
         else return await Promise.reject('No message to edit.');
     }
 
-    /**
-     * Edit the embed page system.
-     * @returns {Promise<Message>}
-     */
-    async update() {
-        return await this.edit(this.getOpts())
-    }
     /**
      * @param {boolean} disabled 
      * @returns {MessageOptions}
@@ -370,7 +360,7 @@ module.exports = class Dispage {
         return this.ctx ? this.ctx === "INTERACTION" : null;
     }
     canEdit() {
-        return this.ctx && this.started && !this.ended && !this.deleted;
+        return this.ctx && this.started && !this.deleted;
     }
     /**
      * Check if the argument can be used in the .start() method
@@ -378,8 +368,11 @@ module.exports = class Dispage {
      * @returns {boolean}
      */
     isValidCtx(ctx) {
-        return ['DEFAULT', 'REPLY', 'APPLICATION_COMMAND', 'CONTEXT_MENU_COMMAND']
-            .includes(ctx?.type);
+        return ctx &&
+            (ctx.isRepliable() || [
+                MessageType.Default, MessageType.Reply,
+                MessageType.ChatInputCommand, MessageType.ContextMenuCommand
+            ].includes(ctx.type))
     }
     /**
      * Creates a collector of buttons of the message with the duration
@@ -388,7 +381,7 @@ module.exports = class Dispage {
      */
     _createCollector(reply) {
         return reply.createMessageComponentCollector({
-            componentType: 'BUTTON',
+            componentType: ComponentType.Button,
             time: this.duration,
         });
     }
@@ -421,13 +414,12 @@ module.exports = class Dispage {
 
         if (typeof (this.filter) !== "function")
             add(`.filter should be a function but is a ${typeof (this.filter)}.`)
-        if (typeof (this._sdb) !== "boolean")
-            add(`.showDisabledButtons() should be a boolean but is a ${typeof (this._sdb)}`)
+        if (typeof (this._hdb) !== "boolean")
+            add(`.hideDisabledButtons() should be a boolean but is a ${typeof (this._sdb)}`)
         if (typeof (this.duration) !== "number")
             add(`.duration should be a number but is a ${typeof this.duration}`)
 
-        if (!Object.keys(Constants.MessageButtonStyles).includes(this.mainStyle)) add(`.mainStyle is not a correct button style. (${this.mainStyle})`)
-
+        if (!this.styles.includes(this.mainStyle)) add('.mainStyle is not a valid button style')
         if (!Array.isArray(this.buttons)) add('.buttons is not an array as expected.')
 
         this.users.forEach((id, i) => {
@@ -466,23 +458,28 @@ module.exports = class Dispage {
             if (this.users.includes(int.user.id)) {
                 if (!this.filter(int)) return;
                 const id = int.customId;
-                if (id === "stop") this.collector.stop('button');
+                if (id === "stop") {
+                    await int.update(this.getOpts(true))
+                    return this.collector.stop('button');
+                }
                 else {
                     switch (id) {
                         case 'next':
-                            await this.next();
+                            await this.next(int);
                             break;
                         case 'previous':
-                            await this.previous();
+                            await this.previous(int);
                             break;
                     }
                 }
-                if (this.canEdit()) await this.update();
             }
             await int.deferUpdate().catch(() => 0);
         })
 
-        this.collector.on('end', async (_, reason) => await this.end(reason));
+        this.collector.on('end', async (_, reason) => {
+            if (reason && reason.toLowerCase().includes('delete')) this.deleted = true;
+            return await this.end(reason).catch(console.error)
+        });
         return this;
     }
 }

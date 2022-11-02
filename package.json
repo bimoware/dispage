@@ -29,7 +29,7 @@
   },
   "homepage": "https://github.com/voxlinou1/dispage#readme",
   "dependencies": {
-    "discord.js": "^13.6.0",
-    "typescript": "^4.6.3"
+    "discord.js": "^14.6.0",
+    "typescript": "^4.8.4"
   }
 }
