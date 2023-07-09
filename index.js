@@ -30,6 +30,7 @@ module.exports = class Dispage {
         this.started = false;
         this.deleted = false;
         this.duration = 1000 * 60;
+        /** @type {ButtonStyle} */
         this.mainStyle = "Primary";
         this.styles = Object.keys(ButtonStyle);
         this.buttons = [
